@@ -43,3 +43,32 @@ Extrapolate the model parameters for L2 and L5.
 - satellite
 - drift
 - Rough strength class (Severe, Moderate and Mild)
+
+# Template for the docstrings:
+% function_name
+%
+% Syntax:
+%   general_parameters = get_general_parameters()
+%
+% Description:
+%   (fill it here)
+%
+% Inputs:
+%   input_1_placeholder - description for input 1 placeholder
+%   input_2_placeholder - description for input 2 placeholder
+%
+% Outputs:
+%   output_1_placeholder - description for input 1 placeholder
+%   output_2_placeholder - description for input 2 placeholder
+%
+% Notes:
+%   - note 1 placeholder
+%   - note 2 placeholder
+%
+% Example:
+%   % Put an example code here
+%
+% Author:
+%   Rodrigo de Lima Florindo
+%   ORCID: https://orcid.org/0000-0003-0412-5583
+%   Email: rdlfresearch@gmail.com
