@@ -6,6 +6,8 @@
 clear
 close all
 
+addpath(genpath(fullfile('..','matlab/')));
+
 %%%%%Fixed Parameters%%%%%%%%%%%%%%%%%%%%%
 c = 299792458;            %Speed of light (vacuum)
 re=2.819740289e-15;   %Classical electron radius
@@ -89,7 +91,7 @@ U_fit=U0; mu0_fit=mu0;rhoOveff_fit=rhoOveff;
 %generate realization at nfreq_fig
 nfreq_ext=setdiff([1,2,3],nfreq_fit);  %Change if nfreqs<3
 Phase=zeros(nfreqs,nfft);
-[psi,Phase(nfreq_fit,:),fracMom]=generateSurrogateHk(U_fit,p1,p2,mu0_fit,rhoOveff_fit,dt,nfft,SEED);
+[psi,Phase(nfreq_fit,:),fracMom]=generateSurrogateHk(U_fit,p1,p2,mu0_fit,rhoOveff_fit,dt,nfft,SEED,1);
 
 S4(nfreq_fit)=sqrt(fracMom(2)-1);
 Isim(nfreq_fit,:)=abs(psi).^2;
@@ -97,7 +99,7 @@ Psim(nfreq_fit,:)=unwrap(atan2(imag(psi),real(psi)));
 for nfreq=nfreq_ext
     [X0]=freqExtrapolate(U_fit,p1,mu0_fit,p2,rhoOveff_fit,freqGPS(nfreq_fit),freqGPS(nfreq));
     U=X0(1); mu0=X0(3); rhoOveff=X0(5);
-    [psi,Phase(nfreq,:),fracMom]=generateSurrogateHk(U,p1,p2,mu0,rhoOveff,dt,nfft,SEED);
+    [psi,Phase(nfreq,:),fracMom]=generateSurrogateHk(U,p1,p2,mu0,rhoOveff,dt,nfft,SEED,1);
     S4(nfreq)=sqrt(fracMom(2)-1);
     Isim(nfreq,:)=abs(psi).^2;
     Psim(nfreq,:)=unwrap(atan2(imag(psi),real(psi)));
@@ -137,5 +139,11 @@ for nfreq=1:nfreqs
     end
 end
 bold_fig
+
+S4_L1 = get_S4(Isim(1,:));
+S4_L2 = get_S4(Isim(2,:));
+
+disp(['Computed S4 for L1:',num2str(S4_L1)]);
+disp(['Computed S4 for L1:',num2str(S4_L2)]);
 
 Display_SpectraModel(Isim,Psim,fDop,nfft,nfreq_fit,U_fit,p1,mu0_fit,p2,rhoOveff_fit,fileID)

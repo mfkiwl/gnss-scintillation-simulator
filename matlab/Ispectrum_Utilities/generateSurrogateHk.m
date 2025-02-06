@@ -28,7 +28,6 @@ fDop=(-nfft/2:nfft/2-1)/(nfft*Dt);
 
 %Convert Doppler to mu
 mu=2*pi*fDop*rhoOveff;
-mu_p=mu(nfft/2+2:nfft);
 
 if mu0>=1
     Cpp=U;
@@ -38,7 +37,13 @@ end
 %Generate SDF(mu)
 [SDF0,~]=generatePmu(Cpp,p1,p2,mu0,mu);
 SDF0(nfft/2+1)=0;
-dmu=mu_p(1);
+dmu=mu(2) - mu(1);
+
+% Rodrigo: Diagnosing the symmetry of the SDF. A non-symmetry may explain
+% power leaking into the imaginary part of the inverse fourier transform
+% that generates the phase0 realization.
+
+% hold on;plot(SDF0);plot(flip(SDF0));hold off;
 
 %Generate phase realization
 rng(SEED);  
