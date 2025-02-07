@@ -30,9 +30,10 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_parameters)
 %
 % See also: UT2GPStime, GenUserTraj, ExtractRINEXeph, PropGeomCalc
 %
-% Written by: Rodrigo de Lima Florindo
-% ORCID: https://orcid.org/0000-0003-0412-5583
-% Email: rdlfresearch@gmail.com
+% Author:
+%   Rodrigo de Lima Florindo
+%   ORCID: https://orcid.org/0000-0003-0412-5583
+%   Email: rdlfresearch@gmail.com
 
     %% Get the user trajectory (receiver's LLH coordinates)
     origin_llh = GenUserTraj(general_parameters);
