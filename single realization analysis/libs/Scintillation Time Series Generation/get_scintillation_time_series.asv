@@ -1,4 +1,3 @@
 function get_scintillation_time_series(general_parameters,irregularity_parameters,rhof_veff_ratio, seed)
-    nfft = nicefftnum(general_parameters.simulation_time / general_parameters.Dt);
-    
+    nfft = nicefftnum(general_parameters.)
 end

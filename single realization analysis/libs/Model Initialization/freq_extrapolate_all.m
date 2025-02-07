@@ -1,8 +1,6 @@
-function [extrapolated_irregularity_parameters, rhof_veff_vector] = ...
-    freq_extrapolate_all(irregularity_params, general_parameters, rho_oveff_l1)
-% freq_extrapolate_all Applies the frequency-extrapolation described by Eqs. (12), 
-% (13), and (14) in [1] to 'Severe', 'Moderate', and 'Mild' irregularity parameters 
-% for L2 and L5, using L1 as the reference.
+function [extrapolated_irregularity_parameters, rhof_veff_ratio_vector] = ...
+    freq_extrapolate_all(irregularity_params, general_parameters, rho_oveff_ratio_l1)
+% freq_extrapolate_all 
 %
 % Syntax:
 %   [extrapolated_irregularity_parameters, rhof_veff_vector] = ...
@@ -56,8 +54,9 @@ function [extrapolated_irregularity_parameters, rhof_veff_vector] = ...
 %   at the `gnss-scintillation-simulator-2-param` repository available at
 %   https://github.com/cu-sense-lab/gnss-scintillation-simulator_2-param.
 %   There were neither credits and a proper documentation on the original
-%   code. However, as "Joy" commented on it, i'm assuming that Yu Jiao () have
-%   participated on its development (https://www.researchgate.net/profile/Yu-Jiao-2).
+%   code. However, as "Joy" commented on it, i'm assuming that Yu Jiao 
+%   (https://www.researchgate.net/profile/Yu-Jiao-2) have participated on
+%   its development .
 %
 % Author:
 %   Rodrigo de Lima Florindo
@@ -77,9 +76,9 @@ function [extrapolated_irregularity_parameters, rhof_veff_vector] = ...
     extrapolated_irregularity_parameters = struct('L2', [], 'L5', []);
     
     % Scale the reference ratio (Eq. (13)) for L2 and L5
-    rho_oveff_l2 = rho_oveff_l1 * sqrt(freq_l1 / freq_l2);
-    rho_oveff_l5 = rho_oveff_l1 * sqrt(freq_l1 / freq_l5);
-    rhof_veff_vector = [rho_oveff_l1, rho_oveff_l2, rho_oveff_l5];
+    rho_oveff_ratio_l2 = rho_oveff_ratio_l1 * sqrt(freq_l1 / freq_l2);
+    rho_oveff_ratio_l5 = rho_oveff_ratio_l1 * sqrt(freq_l1 / freq_l5);
+    rhof_veff_ratio_vector = [rho_oveff_ratio_l1, rho_oveff_ratio_l2, rho_oveff_ratio_l5];
     
     % Iterate over each condition (Severe, Moderate, Mild)
     for condition = {'Severe','Moderate','Mild'}
