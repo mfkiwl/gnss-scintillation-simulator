@@ -24,7 +24,7 @@ dt = datetime(general_parameters.date_time(1), ...
 % Compute the day of year directly
 day_of_year = day(dt, 'dayofyear');
 
-PRN = general_parameters.PRN;
+PRN = general_parameters.prn;
 
 datadir = 'https://cddis.nasa.gov/archive/gnss/data/daily/';
 YYYY = num2str(year);

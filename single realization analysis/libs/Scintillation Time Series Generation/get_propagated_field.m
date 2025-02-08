@@ -1,4 +1,4 @@
-function propagated_scint_field = get_propagated_field(detrended_phase_realization, mu)
+function propagated_scint_field = get_propagated_field(mu, detrended_phase_realization)
 % get_propagated_field
 %
 % Syntax:
