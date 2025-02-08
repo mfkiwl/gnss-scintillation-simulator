@@ -61,13 +61,19 @@ function norm_phase_sdf = get_norm_phase_sdf(mu, irr_param)
     idx_below = (abs(mu) <= irr_param.mu0);
     idx_above = (abs(mu) > irr_param.mu0);
 
+    if irr_param.mu0>=1
+        Cpp= irr_param.U;
+    else
+        Cpp= irr_param.U / irr_param.mu0^(irr_param.p2-irr_param.p1);
+    end
+
     % First case
     norm_phase_sdf(idx_below) = ...
-        irr_param.U .* abs(mu(idx_below)).^(-irr_param.p1);
+        Cpp .* abs(mu(idx_below)).^(-irr_param.p1);
 
     % Second case
     norm_phase_sdf(idx_above) = ...
-        irr_param.U .* (irr_param.mu0^(irr_param.p2 - irr_param.p1)) ...
+        Cpp .* (irr_param.mu0^(irr_param.p2 - irr_param.p1)) ...
         .* abs(mu(idx_above)).^(-irr_param.p2);
 
     % Manually set the singular point at μ=0 to zero

@@ -93,10 +93,9 @@ function plot_amp_phase_sdf_with_theory( ...
     % Post-propagation intensity
     intensity_signal = abs(scint_field).^2;
     intensity_sdf_1sided_post = compute_sdf_1sided(intensity_signal);
-    experimental_s4_val = get_S4(abs(scint_field).^2);
 
     % Theoretical intensity from Ispectrum (interpolated to match partial_mu)
-    [Imu, muAxis, theorietical_s4_val] = Ispectrum(irr_params.U, irr_params.p1, irr_params.p2, irr_params.mu0);
+    [Imu, muAxis, S4_val] = Ispectrum(irr_params.U, irr_params.p1, irr_params.p2, irr_params.mu0);
     logImu_interp = interp1(log10(muAxis), log10(Imu), log10(partial_mu), 'pchip', 'extrap');
     Imu_interp    = 10.^logImu_interp;
 
@@ -120,10 +119,8 @@ function plot_amp_phase_sdf_with_theory( ...
     set(gca,'XScale','log');
     xlabel('Frequency (Hz)');
     ylabel('SDF (dB)');
-    title(sprintf('Post-Prop Intensity vs. Theoretical (Theoretical S4=%.5f; Experimental S4 = %.5f)', theorietical_s4_val, experimental_s4_val));
+    title(sprintf('Post-Prop Intensity vs. Theoretical (S4=%.3f)', S4_val));
     legend('Post-Prop','Theory','Location','best');
-    grid('on');
-    grid('minor');
     hold off;
 
     % Subplot 2: Phase
@@ -138,7 +135,6 @@ function plot_amp_phase_sdf_with_theory( ...
     title('Phase SDF: Pre-Prop, Post-Prop, and Theory');
     legend('Pre-Prop','Post-Prop','Theory','Location','best');
     grid('on');
-    grid('minor');
     hold off;
     
     sgtitle('Intensity & Phase SDF Comparison');
