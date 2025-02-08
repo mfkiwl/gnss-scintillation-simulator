@@ -10,7 +10,7 @@ function propagated_scint_field = get_scintillation_time_series(gen_params, irr_
 % Description:
 %   Generates a time-domain scintillation field by performing the following steps:
 %   1) Determines a suitable FFT length (nfft) based on the simulation time and 
-%      sampling interval (Dt) via the helper function nicefftnum.m.
+%      sampling interval (dt) via the helper function nicefftnum.m.
 %   2) Computes a Doppler frequency axis over the range [-Nyquist, +Nyquist).
 %   3) Constructs the spatial frequency axis (mu) by scaling the Doppler 
 %      axis with 2*pi*rhof_veff_ratio.
@@ -26,7 +26,7 @@ function propagated_scint_field = get_scintillation_time_series(gen_params, irr_
 % Inputs:
 %   gen_params - Struct containing simulation parameters, including:
 %       .simulation_time : Total simulation time (seconds)
-%       .Dt              : Time step (seconds)
+%       .dt              : Time step (seconds)
 %
 %   irr_params - Struct with irregularity parameters required by 
 %                get_norm_phase_sdf, typically containing:
@@ -48,7 +48,7 @@ function propagated_scint_field = get_scintillation_time_series(gen_params, irr_
 %
 % Dependencies:
 %   - nicefftnum(sim_time_ratio)
-%       Calculates an FFT size based on the ratio of simulation_time/Dt.
+%       Calculates an FFT size based on the ratio of simulation_time/dt.
 %   - get_norm_phase_sdf(mu, irr_params)
 %       Computes a normalized phase spectral density function given mu and 
 %       irregularity parameters.
@@ -67,7 +67,7 @@ function propagated_scint_field = get_scintillation_time_series(gen_params, irr_
 % Example:
 %   % Assuming gen_params, irr_params, and D_mu are already defined or loaded:
 %   gen_params.simulation_time = 60;  % seconds
-%   gen_params.Dt = 0.01;            % time step
+%   gen_params.dt = 0.01;            % time step
 %   irr_params.U   = 1.5;             % turbulence strength
 %   irr_params.mu0 = 0.8;             % break wavenumber
 %   irr_params.p1  = 2.0;             % spectral index (low freq)
@@ -85,8 +85,8 @@ function propagated_scint_field = get_scintillation_time_series(gen_params, irr_
 %   ORCID: https://orcid.org/0000-0003-0412-5583
 %   Email: rdlfresearch@gmail.com
 
-    nfft = nicefftnum(gen_params.simulation_time / gen_params.Dt);
-    doppler_frequency = (-nfft/2 : nfft/2-1) / (nfft * gen_params.Dt); 
+    nfft = nicefftnum(gen_params.simulation_time / gen_params.dt);
+    doppler_frequency = (-nfft/2 : nfft/2-1) / (nfft * gen_params.dt); 
     mu = 2 * pi * doppler_frequency * rhof_veff_ratio;
     D_mu = mu(2) - mu(1);
 
@@ -94,7 +94,7 @@ function propagated_scint_field = get_scintillation_time_series(gen_params, irr_
     norm_phase_sdf = get_norm_phase_sdf(mu, irr_params);
 
     % Generate the random phase realization (note: 'D_mu' must be defined externally).
-    detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, seed);
+    detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft, seed);
 
     % Propagate the scintillation field.
     propagated_scint_field = get_propagated_field(mu, detrended_phase_realization);

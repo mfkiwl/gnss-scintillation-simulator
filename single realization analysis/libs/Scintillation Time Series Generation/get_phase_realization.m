@@ -1,4 +1,4 @@
-function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, seed)
+function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft, seed)
 % get_phase_realization
 %
 % Syntax:
@@ -75,11 +75,10 @@ function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_m
 
     % Generate Gaussian random complex vector (xi). 
     % Note that the variance of xi is sqrt(2).
-    nmu = length(D_mu);
-    xi = (randn(1, nmu) + 1i * randn(1, nmu));
+    xi = randn(1, nfft) + 1i * randn(1, nfft);
 
     % Compute the square-root of the normalized phase SDF.
-    root_norm_phase_sdf = sqrt(norm_phase_sdf .* D_mu / (2*pi));
+    root_norm_phase_sdf = sqrt(norm_phase_sdf * D_mu / (2*pi));
 
     % Obtain the phase realization by taking the real part of the
     % inverse Fourier transform (with shift operations), which corresponds to equation (22) of (1).
@@ -90,10 +89,10 @@ function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_m
     % TPPSM original code:
     % https://github.com/cu-sense-lab/gnss-scintillation-simulator_2-param/blob/master/Libraries/GenScintFieldRealization/GenScintFieldRealization.m
     linear_trend = linex( ...
-        1:nmu, ...
+        1:nfft, ...
         1, ...
-        nmu, ...
+        nfft, ...
         phase_realization(1), ...
-        phase_realization(nmu));
+        phase_realization(nfft));
     detrended_phase_realization = phase_realization - linear_trend;
 end

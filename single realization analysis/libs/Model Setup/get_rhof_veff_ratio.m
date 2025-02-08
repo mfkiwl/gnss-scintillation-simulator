@@ -1,34 +1,76 @@
-function rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_parameters)
-% get_rhof_veff_ratio Computes the scaling parameter (ρ_F/v_eff) for scintillation simulation.
+function rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
+% get_rhof_veff_ratio
 %
-%   rhoF_veff_ratio = get_rhof_veff_ratio(general_parameters) returns the mean
-%   ratio between the square root of the effective ionospheric piercing point (IPP)
-%   range and the effective IPP velocity (v_eff) scaled by sqrt(2*pi*L1 frequency). 
-%   This scaling parameter is used in scintillation simulation as described in [1].
+% Syntax:
+%   rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
 %
-% Notes: 
-% - I've tried to maintain a similar methodology here from the code
-%   `RunPropGeomCalc.m`, who main author was Charles Rino 
-%   (https://www.researchgate.net/profile/Charles-Rino), and it was 
-%   modified by Dongyang Xu (https://www.researchgate.net/profile/Noah-Xu) 
-%   and Yu Jiao (https://www.researchgate.net/profile/Yu-Jiao-2/research).
-%   There are still many improvements that could be achieved here.
+% Description:
+%   Computes the mean value of the scaling parameter (rho_F / v_eff) for the L1
+%   frequency band. This parameter is used in scintillation simulation to relate
+%   the effective ionospheric piercing point (IPP) range and velocity to the
+%   L1 carrier frequency. Under the hood, this function:
+%       1) Generates user trajectory information (GenUserTraj).
+%       2) Extracts ephemeris data (ExtractRINEXeph).
+%       3) Converts UTC date/time to GPS time (UT2GPStime).
+%       4) Computes satellite-to-receiver geometry (PropGeomCalc), including 
+%          the IPP range and the effective IPP velocity (veff).
+%       5) Applies equations (12) and (13) from [1] to obtain sqrt(effective_ipp_range) / (veff * sqrt(2*pi*f_L1/c)).
+%          This ratio is averaged over the entire simulation interval and returned as
+%          rhof_veff_ratio_L1.
+%
+% Inputs:
+%   gen_params - Struct containing the required parameters and settings for
+%                trajectory and geometry calculations. Common fields include:
+%       .date_time      : MATLAB date vector [year, month, day, hour, minute, second]
+%       .simulation_time: Duration for which data is computed (seconds)
+%       .gps_bands      : [L1, L2, L5] frequencies in Hz
+%       .c              : Speed of light (m/s)
+%       .ipp_height     : Ionospheric pierce point height (m)
+%       .rx_vel         : Receiver velocity (m/s)
+%       .drift_velocity : Ionospheric drift velocity (m/s)
+%       (additional fields may be present for GenUserTraj, ExtractRINEXeph, etc.)
+%
+% Outputs:
+%   rhof_veff_ratio_L1 - Scalar representing the mean ratio (rho_F / v_eff) at L1,
+%                        used for scaling in scintillation simulation.
+%
+% Notes:
+%   - This function relies on external programs for orbit propagation and user
+%     trajectory (GenUserTraj, ExtractRINEXeph) as well as geometry and IPP
+%     calculations (PropGeomCalc).
+%   - The conversion from UTC to GPS time is handled by UT2GPStime (originally
+%     written by Charles Rino). This code section may be updated if a more
+%     modern approach becomes available.
+%   - The usage of an average value for (rho_F / v_eff) is an approach introduced 
+%     in "RunGenScintFieldRelization" from the 
+%     gnss-scintillation-simulator-2-param repository.
 %
 % Dependencies:
-%   - GenUserTraj
-%   - ExtractRINEXeph
-%   - UT2GPStime (a function written by Charles Rino; TODO (Rodrigo): Consider substituting this later, since this seems to be very old.)
-%   - PropGeomCalc
+%   - UT2GPStime      : Converts UTC date/time to GPS week and seconds-of-week.
+%   - GenUserTraj     : Generates user (receiver) trajectory data.
+%   - ExtractRINEXeph : Extracts GPS ephemeris from RINEX files.
+%   - PropGeomCalc    : Computes satellite geometry and IPP parameters.
 %
 % References:
-% [1] Jiao, Yu, Rino, Charles, Morton, Yu (Jade), Carrano, Charles, 
-%     "Scintillation Simulation on Equatorial GPS Signals for Dynamic 
-%     Platforms," Proceedings of the 30th International Technical Meeting 
-%     of the Satellite Division of The Institute of Navigation (ION GNSS+ 
-%     2017), Portland, Oregon, September 2017, pp. 1644-1657. 
-%     https://doi.org/10.33012/2017.15258
+%   [1] Jiao, Yu, Rino, Charles, Morton, Yu (Jade), Carrano, Charles, 
+%       "Scintillation Simulation on Equatorial GPS Signals for Dynamic 
+%       Platforms," Proceedings of the 30th International Technical Meeting 
+%       of The Institute of Navigation (ION GNSS+ 2017), Portland, Oregon, 
+%       September 2017, pp. 1644-1657. https://doi.org/10.33012/2017.15258
 %
-% See also: UT2GPStime, GenUserTraj, ExtractRINEXeph, PropGeomCalc
+% See also:
+%   UT2GPStime, GenUserTraj, ExtractRINEXeph, PropGeomCalc
+%
+% Example:
+%   % Example usage:
+%   gen_params.date_time       = [2023, 01, 10, 12, 00, 00];
+%   gen_params.simulation_time = 300;             % 5 minutes
+%   gen_params.gps_bands       = [1.57542e9, 1.22760e9, 1.17645e9];
+%   gen_params.c               = 3e8;             % Speed of light
+%   gen_params.ipp_height      = 350e3;           % 350 km
+%   gen_params.rx_vel          = [0, 0, 0];       % Receiver at rest
+%   gen_params.drift_velocity  = [50, 0];         % 50 m/s eastward drift
+%   ratio_L1 = get_rhof_veff_ratio(gen_params);
 %
 % Author:
 %   Rodrigo de Lima Florindo
@@ -36,54 +78,45 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_parameters)
 %   Email: rdlfresearch@gmail.com
 
     %% Get the user trajectory (receiver's LLH coordinates)
-    origin_llh = GenUserTraj(general_parameters);
+    origin_llh = GenUserTraj(gen_params);
     
     %% Extract the ephemeris for the GPS satellites
-    eph = ExtractRINEXeph(general_parameters);
+    eph = ExtractRINEXeph(gen_params);
 
     %% Generate 1-second time samples for the propagation geometry calculation
-    % UT2GPStime is a function written by Charles Rino.
-    % TODO (Rodrigo): Consider substituting UT2GPStime later, since it appears to be very old.
-    [gps_time_sec_start, gps_week, ~, ~] = UT2GPStime(general_parameters.date_time);
-    gps_time_sec_end = gps_time_sec_start + general_parameters.simulation_time - 1;
+    [gps_time_sec_start, gps_week, ~, ~] = UT2GPStime(gen_params.date_time);
+    gps_time_sec_end = gps_time_sec_start + gen_params.simulation_time - 1;
     
-    % Create an array with 2 rows and simulation_time columns:
-    %   - The first row contains the GPS week numbers.
-    %   - The second row contains the seconds counting from the start of the week.
-    gps_week_in_seconds(1, :) = ones(1, general_parameters.simulation_time) * gps_week;
+    gps_week_in_seconds(1, :) = ones(1, gen_params.simulation_time) * gps_week;
     gps_week_in_seconds(2, :) = gps_time_sec_start : gps_time_sec_end;
     
-    % Handle the case when a GPS week is finishing (i.e., seconds exceed 604800)
+    % Handle the case when crossing into a new GPS week
     index_new_week = find(gps_week_in_seconds(2, :) >= 604800);
-    % Correct the week number for these samples.
     gps_week_in_seconds(1, index_new_week) = gps_week_in_seconds(1, index_new_week) + 1;
-    % Adjust the seconds to wrap around.
     gps_week_in_seconds(2, index_new_week) = gps_week_in_seconds(2, index_new_week) - 604800;
 
     %% Compute the propagation geometry and IPP parameters
     sat_geom = PropGeomCalc( ...
         gps_week_in_seconds, ...
-        general_parameters.date_time, ...
+        gen_params.date_time, ...
         eph, ...
         origin_llh, ...
-        general_parameters.ipp_height, ...
-        general_parameters.rx_vel, ...
-        general_parameters.drift_velocity);
+        gen_params.ipp_height, ...
+        gen_params.rx_vel, ...
+        gen_params.drift_velocity);
     
     sat_receiver_range = sat_geom.sat_rnge;
     ipp_range = sat_geom.rngp;
     veff = sat_geom.veff;
 
-    % The effective IPP range is obtained by the equation (13) of [1]:
+    % Effective IPP range [1, Eq. (13)]
     effective_ipp_range = ipp_range .* (sat_receiver_range - ipp_range) ./ sat_receiver_range;
 
-    % The scaling parameter ρ_F / v_eff for the L1 frequency band is 
-    % obtained by the equation (12) of [1]. Note that it is feasible to 
-    % take the mean of all samples of ρ_F / v_eff, since it doesn't change
-    % significantly over a few minutes. The usage of the mean value was 
-    % first introduced by "Joy", in line 49 of "RunGenScintFieldRelization"
-    % from the `gnss-scintillation-simulator-2-param` repository.
-    rhof_veff_ratio = mean( ...
-        sqrt(effective_ipp_range) ./ (veff * sqrt(2*pi * general_parameters.gps_bands(1))) ...
+    % Mean ratio (rho_F / v_eff) at L1 [1, Eq. (12)]
+    % The usage of the average ratio follows the approach introduced by "Joy" 
+    % in the gnss-scintillation-simulator-2-param repository.
+    rhof_veff_ratio_L1 = mean( ...
+        sqrt(effective_ipp_range) ./ (veff * sqrt((2 * pi * gen_params.gps_bands(1)) / gen_params.c)) ...
     );
+
 end

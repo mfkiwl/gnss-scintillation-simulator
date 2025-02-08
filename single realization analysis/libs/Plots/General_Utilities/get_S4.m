@@ -28,10 +28,9 @@
 %     2022. Modeling of ionospheric scintillation. J. Space Weather 
 %     Space Clim. 12, 22. https://doi.org/10.1051/swsc/2022016.
 %
-% Author:
-%   Rodrigo de Lima Florindo
-%   ORCID: https://orcid.org/0000-0003-0412-5583
-%   Email: rdlfresearch@gmail.com
+% Author 1: Rodrigo de Lima Florindo
+% Author's 1 ORCID: https://orcid.org/0000-0003-0412-5583
+% Author's 1 Email: rdlfresearch@gmail.com
 
 
 function S4 = get_S4(SI)
