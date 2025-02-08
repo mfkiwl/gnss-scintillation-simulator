@@ -43,6 +43,12 @@ function norm_phase_sdf = get_norm_phase_sdf(mu, irr_param)
 %   irr_param.mu0 = 5;
 %   sdf = get_norm_phase_sdf(mu, irr_param);
 %
+% References:
+%   [1] Carrano, C. S., and C. L. Rino (2016), A theory of scintillation 
+%       for two-component power law irregularity spectra: Overview and 
+%       numerical results, Radio Sci., 51, 789–813,
+%       doi:10.1002/2015RS005903.
+%
 % Author:
 %   Rodrigo de Lima Florindo
 %   ORCID: https://orcid.org/0000-0003-0412-5583
