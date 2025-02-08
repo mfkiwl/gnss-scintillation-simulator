@@ -19,15 +19,14 @@ len=length(rootSDF1);
 % simturb=real(fftshift(fft(fftshift(rootSDF1.*xi_hermitian))));
 
 xi=(randn(1,len)+1i*randn(1,len));
-xi_real = randn(1,len);
-simturb=real(fftshift(fft(fftshift(rootSDF1.*xi_real))));
+simturb=real(fftshift(fft(fftshift(rootSDF1.*xi))));
 
 % Rodrigo: Diagonising the power leaking to the imaginary part of the
 % realization.
-figure;
-hold on;
-plot(real(fftshift((fft(fftshift(rootSDF1.*xi))))));
-plot(imag(fftshift((fft(fftshift(rootSDF1.*xi))))));
-hold off;
+% figure;
+% hold on;
+% plot(real(fftshift((fft(fftshift(rootSDF1.*xi))))));
+% plot(imag(fftshift((fft(fftshift(rootSDF1.*xi))))));
+% hold off;
 
 return

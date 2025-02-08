@@ -15,9 +15,9 @@ function [Imu,mu,S4,Cpp,nstp,result]=Ispectrum(U,p1,p2,mu0,varargin)
 % Ispectrum  Computes the normalized intensity SDF for a plane wave that traverses a phase screen
 %             I(mu) = int_{-inf}^{inf} exp[-gamma(eta,mu)] exp(-i eta mu) d eta
 %The normalized screen SDF is specified as a piecewise power law
-%             {   muo^(-p1),          if  0<= mu <= muo,
+%                  {   muo^(-p1),          if  0<= mu <= muo,
 %       P(mu) = U1 {    mu^(-p1),          if muo < mu <= mub,
-%            {  mub^(p2-p1) mu^(-p2), if mub < mu <= mui,
+%                  {  mub^(p2-p1) mu^(-p2), if mub < mu <= mui,
 % where U1 = Cp rhof^(p1-1) and
 %          Cp   = phase spectral strength
 %         rhof = sqrt(z/wavk) is the Fresnel scale
