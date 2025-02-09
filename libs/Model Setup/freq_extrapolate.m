@@ -1,10 +1,10 @@
 function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
-    freq_extrapolate(irr_params, gen_params, rho_oveff_ratio_l1)
+    freq_extrapolate(irr_params, general_params, rho_oveff_ratio_L1)
 % freq_extrapolate
 %
 % Syntax:
 %   [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
-%       freq_extrapolate(irr_params, gen_params, rho_oveff_ratio_l1)
+%       freq_extrapolate(irr_params, gen_params, rho_oveff_ratio_L1)
 %
 % Description:
 %   This function extrapolates the irregularity parameters (U, mu0, p1, p2) 
@@ -33,10 +33,10 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
 %                        the field .gps_bands, a 1x3 vector with the frequencies 
 %                        [L1, L2, L5].
 %
-%   rho_oveff_ratio_l1  - Ratio (rho_F / v_eff) known at L1 (scalar).
+%   rho_oveff_ratio_L1  - Ratio (rho_F / v_eff) known at L1 (scalar).
 %
 % Outputs:
-%   extrapolated_irr_params - Struct with fields .L2 and .L5,
+%   extrapolated_irr_params - Struct with fields .L1, .L2 and .L5,
 %       each containing .U, .mu0, .p1, and .p2. These represent the 
 %       extrapolated parameters at the corresponding frequency.
 %
@@ -44,8 +44,7 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
 %
 % Notes:
 %   - This code is adapted from the function FreqExtrapolate.m available at:
-%       https://github.com/cu-sense-lab/gnss-scintillation-simulator_2-param/blob/master/...
-%       Libraries/GenScintFieldRealization/FreqExtrapolate.m
+%       https://github.com/cu-sense-lab/gnss-scintillation-simulator_2-param/blob/master/Libraries/GenScintFieldRealization/FreqExtrapolate.m
 %
 % Example:
 %   % Suppose we have a single set of irregularity parameters:
@@ -76,27 +75,32 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
 %   Email: rdlfresearch@gmail.com
 
     % Extract frequencies (L1, L2, L5) from gen_params.
-    freq_l1 = gen_params.gps_bands(1);
-    freq_l2 = gen_params.gps_bands(2);
-    freq_l5 = gen_params.gps_bands(3);
+    freq_L1 = general_params.gps_bands(1);
+    freq_L2 = general_params.gps_bands(2);
+    freq_L5 = general_params.gps_bands(3);
 
     % Scale the reference ratio (rho_F / v_eff) for L2 and L5 [Eq. (13)].
-    rho_oveff_ratio_l2 = rho_oveff_ratio_l1 * sqrt(freq_l1 / freq_l2);
-    rho_oveff_ratio_l5 = rho_oveff_ratio_l1 * sqrt(freq_l1 / freq_l5);
-    rhof_veff_ratio_vector = [rho_oveff_ratio_l1, rho_oveff_ratio_l2, rho_oveff_ratio_l5];
+    rho_oveff_ratio_L2 = rho_oveff_ratio_L1 * sqrt(freq_L1 / freq_L2);
+    rho_oveff_ratio_L5 = rho_oveff_ratio_L1 * sqrt(freq_L1 / freq_L5);
+    rhof_veff_ratio_vector = [rho_oveff_ratio_L1, rho_oveff_ratio_L2, rho_oveff_ratio_L5];
 
     % Extract parameters at L1.
-    U_f1   = irr_params.U;
-    mu0_f1 = irr_params.mu0;
+    U_L1   = irr_params.U;
+    mu0_L1 = irr_params.mu0;
     p1     = irr_params.p1;
     p2     = irr_params.p2;
 
     % Extrapolate from L1 to L2 and from L1 to L5.
-    [U_L2, mu0_L2] = local_extrapolate(U_f1, mu0_f1, p1, p2, freq_l1, freq_l2);
-    [U_L5, mu0_L5] = local_extrapolate(U_f1, mu0_f1, p1, p2, freq_l1, freq_l5);
+    [U_L2, mu0_L2] = local_extrapolate(U_L1, mu0_L1, p1, p2, freq_L1, freq_L2);
+    [U_L5, mu0_L5] = local_extrapolate(U_L1, mu0_L1, p1, p2, freq_L1, freq_L5);
 
     % Store results in the output struct.
-    extrapolated_irr_params = struct('L2', [], 'L5', []);
+    extrapolated_irr_params = struct('L1', [], 'L2', [], 'L5', []);
+
+    extrapolated_irr_params.L1 = struct('U', U_L1,  ...
+                                                     'mu0', mu0_L1, ...
+                                                     'p1', p1, ...
+                                                     'p2', p2);
     extrapolated_irr_params.L2 = struct('U', U_L2,  ...
                                                      'mu0', mu0_L2, ...
                                                      'p1', p1, ...
@@ -105,7 +109,6 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
                                                      'mu0', mu0_L5, ...
                                                      'p1', p1, ...
                                                      'p2', p2);
-
 end
 
 function [U_f2, mu0_f2] = local_extrapolate(U_f1, mu0_f1, p1, p2, f1, f2)
