@@ -53,11 +53,14 @@ function irregularity_params = get_irregularity_parameters(varargin)
 %   Email: rdlfresearch@gmail.com
 
     %% Define default parameter structures for each turbulence condition
-    defaultSevere   = struct('U', 1, 'mu0', 0.55, 'p1', 2.5, 'p2', 3.5);
+    defaultSevere   = struct('U', 1.5, 'mu0', 0.55, 'p1', 2.5, 'p2', 3.5);
     % TODO: Confirm wether we should adopt the same mu0, p1 and p2 for both
     % severe and moderate scintillation cases.
-    defaultModerate = struct('U', 0.7, 'mu0', 0.55, 'p1', 2.45, 'p2', 3.7);
-    defaultMild     = struct('U', 0.1, 'mu0', 1, 'p1', 3, 'p2', 3);
+    defaultModerate = struct('U', 0.4, 'mu0', 0.55, 'p1', 2.45, 'p2', 3.7);
+    % Note: The `defaultMild` parameters is a one-component power law, since
+    % p1 = p2. It is noteworthy to comment that mu0 have no impact on the
+    % model in this case.
+    defaultMild     = struct('U', 0.05, 'mu0', 1, 'p1', 3, 'p2', 3);
 
     %% Create input parser and add optional parameters
     pInput = inputParser;
