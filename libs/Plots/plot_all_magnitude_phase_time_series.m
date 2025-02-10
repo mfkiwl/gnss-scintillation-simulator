@@ -57,7 +57,7 @@ function plot_all_magnitude_phase_time_series(scint_field_struct, time_vector)
             s4_values(j) = get_S4(abs(truncated_scint_field).^2);
             
             plot(time_vector, 10*log10(abs(truncated_scint_field).^2), colors{j}, 'LineWidth', 1.2);
-            legend_labels{j} = sprintf('%s (S4=%.3f)', freq, s4_values(j));
+            legend_labels{j} = sprintf('%s (S_4=%.3f)', freq, s4_values(j));
         end
         xlabel('Time (s)', 'FontName', 'Helvetica');
         ylabel('Magnitude [dB]', 'FontName', 'Helvetica');

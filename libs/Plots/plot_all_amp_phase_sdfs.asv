@@ -9,8 +9,8 @@ function plot_all_amp_phase_sdfs(scint_field_struct, irr_params, detrended_phase
 %   - **Columns**: L1, L2, L5 frequency bands.
 %   - **Rows**: Intensity SDF (top) and Phase SDF (bottom).
 %
-%   The intensity SDF of the post-propagation scintillation field is 
-%   compared with the theoretical intensity spectrum from `Ispectrum.m`.
+%   The intensity SDF of the **post-propagation** scintillation field is compared with 
+%   the theoretical intensity spectrum from `Ispectrum.m`.
 %   
 %   The phase SDFs compare:
 %   - Pre-propagation phase realization (`detrended_phase_realization`)
@@ -40,12 +40,7 @@ function plot_all_amp_phase_sdfs(scint_field_struct, irr_params, detrended_phase
 %       Simulator examples, available at 
 %       https://github.com/cu-sense-lab/gnss-scintillation-simulator/blob/master/examples/GenerateGPSPhaseScreenRealization.m
 %       [Accessed: 10-02-2025].
-%
-%   [2] "Display_SpectraModel.m" from the GNSS Scintillation Simulator 
-%       examples, available at 
-%       https://github.com/cu-sense-lab/gnss-scintillation-simulator/blob/master/examples/Display_SpectraModel.m
-%       [Accessed: 10-02-2025].
-%
+
 % Example:
 %   plot_all_amp_phase_sdfs(scint_field_struct, irr_params_set, doppler_frequency_struct, mu_struct, rhof_veff_ratio_vector);
 %
@@ -93,7 +88,7 @@ function plot_all_amp_phase_sdfs(scint_field_struct, irr_params, detrended_phase
 
             % Compute Phase SDFs
             % NOTE: Both intensity and phase are normalized by
-            % `rhof_veff_ratio` to agree with the code in [2].
+            % `rhof_veff_ratio` to agree with the code in 
             preprop_phase_sdf_1sided  = compute_sdf_1sided(detrended_phase_realization, nfft, doppler_frequency, sdf_idx_1sided) / rhof_veff_ratio;
             postprop_phase_sdf_1sided = compute_sdf_1sided(phase(scint_field), nfft, doppler_frequency, sdf_idx_1sided) / rhof_veff_ratio;
             norm_phase_sdf = get_norm_phase_sdf(mu, irr_params_freq);
@@ -121,7 +116,7 @@ function plot_all_amp_phase_sdfs(scint_field_struct, irr_params, detrended_phase
             plot(partial_doppler_freq, 10*log10(phase_sdf_1sided_theory), 'r--', 'LineWidth', 1.2);
             set(gca, 'XScale', 'log', 'FontName', 'Helvetica');
             xlabel('Doppler Frequency (Hz)', 'FontName', 'Helvetica');
-            ylabel('Phase SDF [dB]', 'FontName', 'Helvetica');
+            ylabel('Phase SDF [rad^2 - dB]', 'FontName', 'Helvetica');
             title(sprintf('%s %s Phase SDF', scenario, freq), 'FontSize', 10, 'FontName', 'Helvetica');
             legend('Pre-Propagation SDF', 'Post-Propagation SDF', 'Theoretical Model', 'Location', 'best', 'FontName', 'Helvetica');
             grid on;
