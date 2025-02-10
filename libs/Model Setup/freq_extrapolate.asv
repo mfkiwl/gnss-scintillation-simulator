@@ -10,10 +10,17 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
 %   This function extrapolates the irregularity parameters (U, mu0, p1, p2) 
 %   from a reference frequency (L1) to two other frequencies (L2 and L5). 
 %   The scaling follows the conventions in [1]:
-%       - Equation (17) for scaling the break wavenumber mu0.
-%       - Equation (18) for scaling the ratio (rho_F / v_eff).
-%       - Equation (19) for the piecewise definition of the universal 
+%       - Equation (12) for scaling the break wavenumber mu0.
+%       - Equation (13) for scaling the ratio (rho_F / v_eff).
+%       - Equation (14) for the piecewise definition of the universal 
 %         turbulence strength parameter U.
+%
+%   Specifically:
+%   1) mu0 at L2 and L5 is obtained by multiplying the L1 value by sqrt(L1_frequency / target_frequency) [Eq. (12)].
+%   2) (rho_F / v_eff) for L2 and L5 is determined by multiplying the L1 value 
+%      by sqrt(L1_frequency / target_frequency) [Eq. (13)].
+%   3) U is computed via the four-case piecewise expression [Eq. (14)], depending 
+%      on whether mu0 >= 1 at the reference or target frequency.
 %
 % Inputs:
 %   irr_params - Struct with fields:
@@ -36,7 +43,7 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
 %   rhof_veff_ratio_vector - 1x3 vector [rho_oveff_L1, rho_oveff_L2, rho_oveff_L5].
 %
 % Notes:
-%   - This code is an adaptation from the function FreqExtrapolate.m available at:
+%   - This code is adapted from the function FreqExtrapolate.m available at:
 %       https://github.com/cu-sense-lab/gnss-scintillation-simulator_2-param/blob/master/Libraries/GenScintFieldRealization/FreqExtrapolate.m
 %
 % Example:
@@ -55,13 +62,12 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
 %   % Extrapolate
 %   [extrap_params, rho_vec] = freq_extrapolate(irr_params, gen_params, rho_oveff_l1);
 %
-% Reference:
-%   [1] Jiao, Yu, Rino, Charles, Morton, Yu (Jade), Carrano, Charles, 
-%       "Scintillation Simulation on Equatorial GPS Signals for Dynamic 
-%       Platforms," Proceedings of the 30th International Technical Meeting
-%       of the Satellite Division of The Institute of Navigation (ION GNSS+
-%       2017), Portland, Oregon, September 2017, pp. 1644-1657. 
-%       https://doi.org/10.33012/2017.15258
+% References:
+%   [1] Xu D, Morton YTJ, Rino CL, Carrano CS, Jiao Y. 
+%       "A two-parameter multifrequency GPS signal simulator for strong 
+%        equatorial ionospheric scintillation: modeling and parameter 
+%        characterization." NAVIGATION. 2020; 67: 181–195. 
+%       https://doi.org/10.1002/navi.350
 %
 % Author:
 %   Rodrigo de Lima Florindo
@@ -92,17 +98,17 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
     extrapolated_irr_params = struct('L1', [], 'L2', [], 'L5', []);
 
     extrapolated_irr_params.L1 = struct('U', U_L1,  ...
-                                         'mu0', mu0_L1, ...
-                                         'p1', p1, ...
-                                         'p2', p2);
+                                                     'mu0', mu0_L1, ...
+                                                     'p1', p1, ...
+                                                     'p2', p2);
     extrapolated_irr_params.L2 = struct('U', U_L2,  ...
-                                         'mu0', mu0_L2, ...
-                                         'p1', p1, ...
-                                         'p2', p2);
+                                                     'mu0', mu0_L2, ...
+                                                     'p1', p1, ...
+                                                     'p2', p2);
     extrapolated_irr_params.L5 = struct('U', U_L5,  ...
-                                         'mu0', mu0_L5, ...
-                                         'p1', p1, ...
-                                         'p2', p2);
+                                                     'mu0', mu0_L5, ...
+                                                     'p1', p1, ...
+                                                     'p2', p2);
 end
 
 function [U_f2, mu0_f2] = local_extrapolate(U_f1, mu0_f1, p1, p2, f1, f2)
@@ -112,8 +118,8 @@ function [U_f2, mu0_f2] = local_extrapolate(U_f1, mu0_f1, p1, p2, f1, f2)
 %   [U_f2, mu0_f2] = local_extrapolate(U_f1, mu0_f1, p1, p2, f1, f2)
 %
 % Description:
-%   Applies [1, Eq. 17] to scale mu0 between frequencies, and applies 
-%   the piecewise expression of [1, Eq. 19] to determine the new universal 
+%   Applies Eq. (12) to scale mu0 between frequencies, and applies 
+%   the piecewise expression of Eq. (11) to determine the new universal 
 %   turbulence strength U. The specific case depends on whether mu0 >= 1 
 %   at the reference frequency (f1) or at the target frequency (f2).
 %
@@ -137,14 +143,6 @@ function [U_f2, mu0_f2] = local_extrapolate(U_f1, mu0_f1, p1, p2, f1, f2)
 %   f1     = 1.57542e9;  % Example L1 frequency
 %   f2     = 1.22760e9;  % Example L2 frequency
 %   [U_f2, mu0_f2] = local_extrapolate(U_f1, mu0_f1, p1, p2, f1, f2);
-%
-% Reference:
-%   [1] Jiao, Yu, Rino, Charles, Morton, Yu (Jade), Carrano, Charles, 
-%       "Scintillation Simulation on Equatorial GPS Signals for Dynamic 
-%       Platforms," Proceedings of the 30th International Technical Meeting
-%       of the Satellite Division of The Institute of Navigation (ION GNSS+
-%       2017), Portland, Oregon, September 2017, pp. 1644-1657. 
-%       https://doi.org/10.33012/2017.15258
 %
 % Author:
 %   Rodrigo de Lima Florindo

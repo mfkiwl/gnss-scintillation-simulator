@@ -1,9 +1,10 @@
+%% Initialization
 clear all; clc;
 
 addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
 
-% Model Setup
+%% Model Setup
 general_params = get_general_parameters();
 rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_params);
 irr_params_set = get_irregularity_parameters();
@@ -21,6 +22,7 @@ extrapolated_irr_params = struct('Severe', [], 'Moderate', [], 'Mild', []);
 [extrapolated_irr_params.Mild, ~] = ...
     freq_extrapolate(irr_params_set.Mild, general_params, rhof_veff_ratio_L1);
 
+%% Scintillation Time Series Generation
 scenarios = fieldnames(extrapolated_irr_params);
 frequencies = {'L1', 'L2', 'L5'};
 
@@ -49,10 +51,10 @@ for i = 1:numel(scenarios)
     end
 end
 
+%% Plotting functions for validation
 % Time vector at the using the simulation_time parameter.
 % Note: The scint_field_struct data have a different size than time_vector,
 % given that its size is estimated using the helping function nicefftnum.m.
-
 time_vector = 0: general_params.dt : general_params.simulation_time - general_params.dt;
 
 plot_all_amp_phase_sdfs(scint_field_struct, extrapolated_irr_params, detrended_phase_realization_struct, doppler_frequency_struct, mu_struct, rhof_veff_ratio_vector);
