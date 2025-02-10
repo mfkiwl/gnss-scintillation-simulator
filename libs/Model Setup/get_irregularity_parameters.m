@@ -6,11 +6,11 @@ function irregularity_params = get_irregularity_parameters(varargin)
 %   irregularity_params = get_irregularity_parameters()
 %   irregularity_params = get_irregularity_parameters('Severe', severeParams, ...
 %                                             'Moderate', moderateParams, ...
-%                                             'Mild', mildParams)
+%                                             'Weak', WeakParams)
 %
 % Description:
 %   This function outputs a struct (irregularity_params) with three fields: 'Severe',
-%   'Moderate', and 'Mild'. Each field is itself a struct containing the
+%   'Moderate', and 'Weak'. Each field is itself a struct containing the
 %   following irregularity parameters:
 %       U   - Universal Turbulence Strength
 %       mu0 - Normalized Break Wavenumber
@@ -32,11 +32,11 @@ function irregularity_params = get_irregularity_parameters(varargin)
 %   'Moderate' - (Optional) A struct with the same fields as above.
 %                Default: struct('U', 0.8, 'mu0', 0.8, 'p1', 2.8, 'p2', 3.8)
 %
-%   'Mild'     - (Optional) A struct with the same fields as above.
+%   'Weak'     - (Optional) A struct with the same fields as above.
 %                Default: struct('U', 0.6, 'mu0', 0.6, 'p1', 2.5, 'p2', 3.5)
 %
 % Outputs:
-%   irregularity_params - A struct with three fields ('Severe', 'Moderate', 'Mild'), each
+%   irregularity_params - A struct with three fields ('Severe', 'Moderate', 'Weak'), each
 %                containing a struct with irregularity parameters.
 %
 % Example:
@@ -57,10 +57,10 @@ function irregularity_params = get_irregularity_parameters(varargin)
     % TODO: Confirm wether we should adopt the same mu0, p1 and p2 for both
     % severe and moderate scintillation cases.
     defaultModerate = struct('U', 0.4, 'mu0', 0.7, 'p1', 2.7, 'p2', 3.3);
-    % Note: The `defaultMild` parameters is a one-component power law, since
+    % Note: The `defaultWeak` parameters is a one-component power law, since
     % p1 = p2. It is noteworthy to comment that mu0 have no impact on the
     % model in this case.
-    defaultMild     = struct('U', 0.05, 'mu0', 1, 'p1', 3, 'p2', 3);
+    defaultWeak     = struct('U', 0.05, 'mu0', 1, 'p1', 3, 'p2', 3);
 
     %% Create input parser and add optional parameters
     pInput = inputParser;
@@ -73,7 +73,7 @@ function irregularity_params = get_irregularity_parameters(varargin)
     % Add parameters for each condition using the default structs
     addParameter(pInput, 'Severe', defaultSevere, validateConditionStruct);
     addParameter(pInput, 'Moderate', defaultModerate, validateConditionStruct);
-    addParameter(pInput, 'Mild', defaultMild, validateConditionStruct);
+    addParameter(pInput, 'Weak', defaultWeak, validateConditionStruct);
     
     % Parse user-supplied name-value pairs
     parse(pInput, varargin{:});
@@ -82,5 +82,5 @@ function irregularity_params = get_irregularity_parameters(varargin)
     irregularity_params = struct();
     irregularity_params.Severe   = pInput.Results.Severe;
     irregularity_params.Moderate = pInput.Results.Moderate;
-    irregularity_params.Mild     = pInput.Results.Mild;
+    irregularity_params.Weak     = pInput.Results.Weak;
 end

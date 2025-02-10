@@ -5,7 +5,7 @@ function plot_all_magnitude_phase_time_series(scint_field_struct, time_vector)
 %   plot_all_magnitude_phase(scint_field_struct, time_vector)
 %
 % Description:
-%   Generates a **2x1 subplot** for each scintillation intensity level (Severe, Moderate, Mild).
+%   Generates a **2x1 subplot** for each scintillation intensity level (Severe, Moderate, Weak).
 %   - **First row**: Magnitude values (10*log10(abs(scint).^2)) for L1, L2, L5.
 %   - **Second row**: Phase values (phase(scint)) for L1, L2, L5.
 %   - **Titles include computed S4 values** for each frequency band.
@@ -14,7 +14,7 @@ function plot_all_magnitude_phase_time_series(scint_field_struct, time_vector)
 %   scint_field_struct - Struct containing scintillation realizations for each scenario:
 %       .Severe.L1, .Severe.L2, .Severe.L5
 %       .Moderate.L1, .Moderate.L2, .Moderate.L5
-%       .Mild.L1, .Mild.L2, .Mild.L5
+%       .Weak.L1, .Weak.L2, .Weak.L5
 %
 %   time_vector - 1D array containing the time values (same for all scenarios & frequencies).
 %
@@ -29,7 +29,7 @@ function plot_all_magnitude_phase_time_series(scint_field_struct, time_vector)
 %   ORCID: https://orcid.org/0000-0003-0412-5583
 %   Email: rdlfresearch@gmail.com
 
-    scenarios = fieldnames(scint_field_struct);  % {'Severe', 'Moderate', 'Mild'}
+    scenarios = fieldnames(scint_field_struct);  % {'Severe', 'Moderate', 'Weak'}
     frequencies = {'L1', 'L2', 'L5'};
     colors = {'b', 'r', 'g'};  % L1 = Blue, L2 = Red, L5 = Green
 

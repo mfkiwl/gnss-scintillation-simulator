@@ -5,7 +5,7 @@ function plot_all_amp_phase_sdfs(scint_field_struct, irr_params, detrended_phase
 %   plot_all_amp_phase_sdfs(scint_field_struct, irr_params, doppler_frequency_struct, mu_struct, rhof_veff_ratio_vector)
 %
 % Description:
-%   Generates **2x3 subplots** for each scintillation intensity level (Severe, Moderate, Mild).
+%   Generates **2x3 subplots** for each scintillation intensity level (Severe, Moderate, Weak).
 %   - **Columns**: L1, L2, L5 frequency bands.
 %   - **Rows**: Intensity SDF (top) and Phase SDF (bottom).
 %
@@ -21,7 +21,7 @@ function plot_all_amp_phase_sdfs(scint_field_struct, irr_params, detrended_phase
 %   scint_field_struct - Struct containing scintillation realizations for each scenario:
 %       .Severe.L1, .Severe.L2, .Severe.L5
 %       .Moderate.L1, .Moderate.L2, .Moderate.L5
-%       .Mild.L1, .Mild.L2, .Mild.L5
+%       .Weak.L1, .Weak.L2, .Weak.L5
 %
 %   irr_params - Struct with spectral parameters (.U, .p1, .p2, .mu0) for each scenario.
 %   doppler_frequency_struct - Struct with Doppler frequency arrays for each scenario & freq.
@@ -54,7 +54,7 @@ function plot_all_amp_phase_sdfs(scint_field_struct, irr_params, detrended_phase
 %   ORCID: https://orcid.org/0000-0003-0412-5583
 %   Email: rdlfresearch@gmail.com
 
-    scenarios = fieldnames(scint_field_struct);  % {'Severe', 'Moderate', 'Mild'}
+    scenarios = fieldnames(scint_field_struct);  % {'Severe', 'Moderate', 'Weak'}
     frequencies = {'L1', 'L2', 'L5'};
 
     for i = 1:numel(scenarios)
