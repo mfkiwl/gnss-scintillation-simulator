@@ -38,7 +38,7 @@ function plot_all_magnitude_phase_time_series(scint_field_struct, time_vector)
         
         % Create figure and set Helvetica as default font
         fig = figure('Name', sprintf('%s Magnitude & Phase', scenario), ...
-                     'Position', [50, 50, 1200, 500], 'Color', 'w');
+                     'Position', [50, 50, 1400, 550], 'Color', 'w');
         set(fig, 'DefaultTextFontName', 'Helvetica');  
         tiledlayout(2, 1, "TileSpacing", "compact");
 

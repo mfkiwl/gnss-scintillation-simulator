@@ -62,7 +62,7 @@ function plot_all_amp_phase_sdfs(scint_field_struct, irr_params, detrended_phase
         rhof_veff_ratio = rhof_veff_ratio_vector(i);
         
         % Create new figure for each scenario
-        fig = figure('Name', sprintf('%s Scintillation - Intensity & Phase SDFs', scenario), 'Position',[50,50,1200,700]);
+        fig = figure('Name', sprintf('%s Scintillation - Intensity & Phase SDFs', scenario), 'Position',[50,50,1400,550]);
         set(fig, 'DefaultTextFontName', 'Helvetica');
         tiledlayout(2, 3, "TileSpacing", "compact");
 
