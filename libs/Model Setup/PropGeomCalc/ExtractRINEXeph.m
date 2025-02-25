@@ -48,7 +48,7 @@ if ~exist(ephfile,'file')
     fprintf(['Some Matlab versions do not recognize .zip compression.' ...
     ' If error occurred, please go to the folder and manually uncompress the .Z ephemeris file.']);
     system(['uncompress ',ephfile,'.Z']);
-    fprintf('Using ephemeris file %s \n',ephfile)
+    %fprintf('Using ephemeris file %s \n',ephfile)
     %Matlab R2015a does not recognize .zip compression => manual uncompress nessary!!
 else
     fprintf('Using ephemeris file %s \n',ephfile)

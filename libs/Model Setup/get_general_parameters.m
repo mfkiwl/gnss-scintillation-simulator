@@ -78,7 +78,7 @@ function general_parameters = get_general_parameters(varargin)
     default_simulation_time = 300;                         % Total simulation time in seconds
     default_dt              = 0.01;                        % Sampling time in seconds
     default_ipp_height      = 350000;                      % IPP height in meters
-    default_drift_velocity  = [0; 100; 0];                 % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
+    default_drift_velocity  = [0; 125; 0];                 % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
 
     %% Create input parser and add parameters
     p = inputParser;
