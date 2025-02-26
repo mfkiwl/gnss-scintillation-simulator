@@ -51,7 +51,7 @@ if ~exist(ephfile,'file')
     %fprintf('Using ephemeris file %s \n',ephfile)
     %Matlab R2015a does not recognize .zip compression => manual uncompress nessary!!
 else
-    fprintf('Using ephemeris file %s \n',ephfile)
+    %fprintf('Using ephemeris file %s \n',ephfile)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
