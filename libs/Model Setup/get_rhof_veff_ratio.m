@@ -22,10 +22,12 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
 %   gen_params - Struct containing the required parameters and settings for
 %                trajectory and geometry calculations. Common fields include:
 %       .date_time      : MATLAB date vector [year, month, day, hour, minute, second]
+%       .prn            : Satellite PRN of interest
 %       .simulation_time: Duration for which data is computed (seconds)
 %       .gps_bands      : [L1, L2, L5] frequencies in Hz
 %       .c              : Speed of light (m/s)
 %       .ipp_height     : Ionospheric pierce point height (m)
+%       .rx_pos         : Receiver position in [lat [rad], lon [rad], height [m])
 %       .rx_vel         : Receiver velocity (m/s)
 %       .drift_velocity : Ionospheric drift velocity (m/s)
 %       (additional fields may be present for GenUserTraj, ExtractRINEXeph, etc.)
@@ -64,12 +66,13 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
 % Example:
 %   % Example usage:
 %   gen_params.date_time       = [2023, 01, 10, 12, 00, 00];
+%   gen_params.prn             = 18; % Satellite prn
 %   gen_params.simulation_time = 300;             % 5 minutes
 %   gen_params.gps_bands       = [1.57542e9, 1.22760e9, 1.17645e9];
 %   gen_params.c               = 3e8;             % Speed of light
 %   gen_params.ipp_height      = 350e3;           % 350 km
 %   gen_params.rx_vel          = [0, 0, 0];       % Receiver at rest
-%   gen_params.drift_velocity  = [50, 0];         % 50 m/s eastward drift
+%   gen_params.drift_velocity  = [0, 50, 0];         % 50 m/s eastward drift
 %   ratio_L1 = get_rhof_veff_ratio(gen_params);
 %
 % Author:

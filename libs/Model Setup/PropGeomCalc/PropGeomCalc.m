@@ -64,7 +64,7 @@ sat_phi =atan2(sat_tcs(1,:),sat_tcs(2,:));
 
 %Satellite velocity & range rate
 %%% Joy %%%
-for ii = 1:length(origin_llh)
+for ii = 1:size(origin_llh, 2)
     D=Rotate_ecf2tcs(origin_llh(:,ii));
     vsat_tcs(:,ii)=D*vsat_ecf(:,ii)-rx_v;
 end
