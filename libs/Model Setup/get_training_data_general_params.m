@@ -94,5 +94,5 @@ function training_data_geom_params = get_training_data_general_params(drift_velo
     training_data_geom_params.dt = 0.01; % Sampling interval;
     training_data_geom_params.ipp_height = 350000;
     drift_velocities = linspace(25,125,drift_velocities_amount);
-    training_data_geom_params.drift_velocity = [zeros(1,drift_velocities_amount); drift_velocities; zeros(1,drift_velocities_amount)];
+    training_data_geom_params.drift_velocities = [zeros(1,drift_velocities_amount); drift_velocities; zeros(1,drift_velocities_amount)];
 end
