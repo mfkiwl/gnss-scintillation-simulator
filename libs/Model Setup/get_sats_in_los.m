@@ -68,7 +68,7 @@ function sats_in_los_struct = get_sats_in_los(ephs, training_data_general_params
         origin_llh = [city_pos.Latitude; city_pos.Longitude; city_pos.Height];
         
         % Preallocate available_prns to maximum possible size (number of PRNs)
-        available_prns = strings(numel(prn_list), 1);
+        available_prns = strings(1, numel(prn_list));
         count = 0;
         
         % Loop over each satellite PRN.
