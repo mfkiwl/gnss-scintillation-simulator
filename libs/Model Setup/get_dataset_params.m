@@ -147,12 +147,19 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
         % Extract eastward drift velocities (assumed to be in row 2).
         eastward_drift_velocities = general.drift_velocities(2, :);
         
-        % Create a numeric table with one row per drift velocity and one column per PRN.
-        T_cell = cell2table(cell(numel(eastward_drift_velocities), numel(prn_string_array)), ...
-            'VariableNames', cellstr(prn_string_array));
+       % Create a cell array filled with empty structs.
+        empty_struct_cell = repmat( ...
+            {struct('rhof_veff_ratio_L1', [], 'rhof_veff_ratio_L2', [], 'rhof_veff_ratio_L5', [])}, ...
+            numel(eastward_drift_velocities), ...
+            numel(prn_string_array));
+        
+        % Convert the cell array to a table with column names from prn_string_array.
+        T_cell = cell2table(empty_struct_cell, 'VariableNames', cellstr(prn_string_array));
+        
+        % Add the DriftVelocities column to the table.
         rhof_veff_ratio_table = addvars(T_cell, eastward_drift_velocities(:), 'Before', 1, ...
             'NewVariableNames', 'DriftVelocities');
-        
+                
         % Loop over each satellite PRN in the LOS.
         for prn_str = prn_string_array
             % For each simulated drift velocity, compute the geometry parameters.
@@ -180,11 +187,10 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
                 % Scale to obtain the ratios for L2 and L5.
                 rhof_veff_ratio_L2 = rhof_veff_ratio_L1 * sqrt(general.gps_bands(1) / general.gps_bands(2));
                 rhof_veff_ratio_L5 = rhof_veff_ratio_L1 * sqrt(general.gps_bands(1) / general.gps_bands(3));
-                
-                % Store the three ratios in a cell array.
-                rhof_veff_ratio_cell = {rhof_veff_ratio_L1, rhof_veff_ratio_L2, rhof_veff_ratio_L5};
 
-                rhof_veff_ratio_table{drift_idx, prn_str} = {rhof_veff_ratio_cell}; 
+                rhof_veff_ratio_table{drift_idx, prn_str}.rhof_veff_ratio_L1 = rhof_veff_ratio_L1;
+                rhof_veff_ratio_table{drift_idx, prn_str}.rhof_veff_ratio_L2 = rhof_veff_ratio_L2;
+                rhof_veff_ratio_table{drift_idx, prn_str}.rhof_veff_ratio_L5 = rhof_veff_ratio_L5;
 
             end
         end

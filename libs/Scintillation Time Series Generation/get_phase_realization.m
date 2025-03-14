@@ -69,10 +69,6 @@ function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_m
 %   ORCID: https://orcid.org/0000-0003-0412-5583
 %   Email: rdlfresearch@gmail.com
 
-    % Establish a single rng seed for the generation of the Gaussian random
-    % variable.
-    rng(seed);
-
     % Generate Gaussian random complex vector (xi). 
     % Note that the variance of xi is sqrt(2).
     xi = randn(1, nfft) + 1i * randn(1, nfft);

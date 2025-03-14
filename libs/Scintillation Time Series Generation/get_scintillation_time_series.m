@@ -1,4 +1,4 @@
-function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,doppler_frequency] = get_scintillation_time_series(gen_params, irr_params, rhof_veff_ratio, seed)
+function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,doppler_frequency] = get_scintillation_time_series(gen_params, irr_params, rhof_veff_ratio)
 % get_scintillation_time_series
 %
 % Syntax:
@@ -37,9 +37,6 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 %   rhof_veff_ratio    - Scalar representing (rho_F / v_eff), used to scale 
 %                        the Doppler frequency axis into a spatial/temporal 
 %                        frequency axis mu.
-%
-%   seed               - Integer seed for the random number generator used 
-%                        by get_phase_realization.
 %
 % Outputs:
 %   propagated_scint_field - Complex time-domain scintillation field after 
@@ -94,7 +91,7 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
     norm_phase_sdf = get_norm_phase_sdf(mu, irr_params);
 
     % Generate the random phase realization (note: 'D_mu' must be defined externally).
-    detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft, seed);
+    detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft);
 
     % Propagate the scintillation field.
     propagated_scint_field = get_propagated_field(mu, detrended_phase_realization);
