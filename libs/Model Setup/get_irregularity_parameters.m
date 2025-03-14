@@ -4,12 +4,12 @@ function irregularity_params = get_irregularity_parameters(varargin)
 %
 % Syntax:
 %   irregularity_params = get_irregularity_parameters()
-%   irregularity_params = get_irregularity_parameters('Severe', severeParams, ...
+%   irregularity_params = get_irregularity_parameters('Strong', severeParams, ...
 %                                             'Moderate', moderateParams, ...
 %                                             'Weak', WeakParams)
 %
 % Description:
-%   This function outputs a struct (irregularity_params) with three fields: 'Severe',
+%   This function outputs a struct (irregularity_params) with three fields: 'Strong',
 %   'Moderate', and 'Weak'. Each field is itself a struct containing the
 %   following irregularity parameters:
 %       U   - Universal Turbulence Strength
@@ -22,7 +22,7 @@ function irregularity_params = get_irregularity_parameters(varargin)
 %   pairs where the value is a struct with fields 'U', 'mu0', 'p1', and 'p2'.
 %
 % Inputs:
-%   'Severe'   - (Optional) A struct with the fields:
+%   'Strong'   - (Optional) A struct with the fields:
 %                    U   - Universal Turbulence Strength
 %                    mu0 - Normalized Break Wavenumber
 %                    p1  - Low-frequency Spectral Index
@@ -36,16 +36,16 @@ function irregularity_params = get_irregularity_parameters(varargin)
 %                Default: struct('U', 0.6, 'mu0', 0.6, 'p1', 2.5, 'p2', 3.5)
 %
 % Outputs:
-%   irregularity_params - A struct with three fields ('Severe', 'Moderate', 'Weak'), each
+%   irregularity_params - A struct with three fields ('Strong', 'Moderate', 'Weak'), each
 %                containing a struct with irregularity parameters.
 %
 % Example:
 %   % Use default parameters:
 %   irregularity_params = get_irregularity_parameters();
 %
-%   % Override the Severe condition parameters:
+%   % Override the Strong condition parameters:
 %   customSevere = struct('U', 1.2, 'mu0', 1.1, 'p1', 3.2, 'p2', 4.1);
-%   irregularity_params = get_irregularity_parameters('Severe', customSevere);
+%   irregularity_params = get_irregularity_parameters('Strong', customSevere);
 %
 % Author:
 %   Rodrigo de Lima Florindo
@@ -71,7 +71,7 @@ function irregularity_params = get_irregularity_parameters(varargin)
         all(isfield(x, {'U', 'mu0', 'p1', 'p2'}));
     
     % Add parameters for each condition using the default structs
-    addParameter(pInput, 'Severe', defaultSevere, validateConditionStruct);
+    addParameter(pInput, 'Strong', defaultSevere, validateConditionStruct);
     addParameter(pInput, 'Moderate', defaultModerate, validateConditionStruct);
     addParameter(pInput, 'Weak', defaultWeak, validateConditionStruct);
     
@@ -80,7 +80,7 @@ function irregularity_params = get_irregularity_parameters(varargin)
     
     %% Build the output struct with the irregularity parameters for each condition
     irregularity_params = struct();
-    irregularity_params.Severe   = pInput.Results.Severe;
+    irregularity_params.Strong   = pInput.Results.Strong;
     irregularity_params.Moderate = pInput.Results.Moderate;
     irregularity_params.Weak     = pInput.Results.Weak;
 end

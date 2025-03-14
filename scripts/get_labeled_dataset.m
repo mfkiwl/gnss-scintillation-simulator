@@ -5,15 +5,13 @@ addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
 
 %% Parameter Setup
-drift_velocities_amount = 2;
+% Amount of drift velocities linearly sampled from 25 to 125m/s
+drift_velocities_amount = 3;
+% Amount of carrier-to-noise ratio values varying from 25 to 45 dB-Hz
+carrier_to_noise_ratios_amount = 3;
 
-training_data_general_params = get_training_data_general_params(drift_velocities_amount);
-
+% Mask angle for the line-of-sight satellites
 mask_angle_deg = 15;
-% The rhof_veff_ratio_struct should be like this:
-% - fields are the cities names
-% - values are a struct with the fields being the satellite PRNs and their
-% - values being the calculated rhof_veff_ratio,
-rhof_veff_ratios = get_all_rhof_veff_ratios(training_data_general_params, mask_angle_deg);
 
-irr_params_set = get_irregularity_parameters();
+data_set_params = get_dataset_params(drift_velocities_amount, carrier_to_noise_ratios_amount, mask_angle_deg);
+

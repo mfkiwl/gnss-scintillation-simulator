@@ -9,14 +9,14 @@ general_params = get_general_parameters();
 rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_params);
 irr_params_set = get_irregularity_parameters();
 
-extrapolated_irr_params = struct('Severe', [], 'Moderate', [], 'Weak', []);
+extrapolated_irr_params = struct('Strong', [], 'Moderate', [], 'Weak', []);
 
 % Note: The `rhof_veff_ratio_vector` array do not depend on the
 % irregularity parameters U, p1, p2 and mu0. Therefore, it is sufficient to
 % extrapolate it only for one scintillation scenario, which is in this case
-% the Severe case.
-[extrapolated_irr_params.Severe, rhof_veff_ratio_vector] = ...
-    freq_extrapolate(irr_params_set.Severe, general_params, rhof_veff_ratio_L1);
+% the Strong case.
+[extrapolated_irr_params.Strong, rhof_veff_ratio_vector] = ...
+    freq_extrapolate(irr_params_set.Strong, general_params, rhof_veff_ratio_L1);
 [extrapolated_irr_params.Moderate, ~] = ...
     freq_extrapolate(irr_params_set.Moderate, general_params, rhof_veff_ratio_L1);
 [extrapolated_irr_params.Weak, ~] = ...
