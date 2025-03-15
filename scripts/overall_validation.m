@@ -26,8 +26,6 @@ extrapolated_irr_params = struct('Strong', [], 'Moderate', [], 'Weak', []);
 scenarios = fieldnames(extrapolated_irr_params);
 frequencies = {'L1', 'L2', 'L5'};
 
-seed = 1;
-
 scint_field_struct = struct();
 norm_phase_sdf_struct = struct();
 detrended_phase_realization_struct = struct();
@@ -46,8 +44,8 @@ for i = 1:numel(scenarios)
         get_scintillation_time_series( ...
             general_params, ...
             extrapolated_irr_params.(scenario).(freq), ...
-            rhof_veff_ratio_vector(j), ...
-            seed);
+            rhof_veff_ratio_vector(j) ...
+            );
     end
 end
 

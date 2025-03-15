@@ -1,4 +1,4 @@
-function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,doppler_frequency] = get_scintillation_time_series(gen_params, irr_params, rhof_veff_ratio)
+function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,doppler_frequency] = get_scintillation_time_series(gen_params, irr_params, rhof_veff_ratio, varargin)
 % get_scintillation_time_series
 %
 % Syntax:
@@ -77,10 +77,14 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 %                                               ratio, ...
 %                                               seed_val);
 %
-% Author:
-%   Rodrigo de Lima Florindo
-%   ORCID: https://orcid.org/0000-0003-0412-5583
-%   Email: rdlfresearch@gmail.com
+% Author: Rodrigo de Lima Florindo
+% ORCID: https://orcid.org/0000-0003-0412-5583
+% Email: rdlfresearch@gmail.com
+
+    p = inputParser;
+    addParameter(p, 'data_type', 'double', @(x) ischar(x) || isstring(x));
+    parse(p, varargin{:});
+    data_type = p.Results.data_type;
 
     nfft = nicefftnum(gen_params.simulation_time / gen_params.dt);
     doppler_frequency = (-nfft/2 : nfft/2-1) / (nfft * gen_params.dt); 
@@ -91,7 +95,7 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
     norm_phase_sdf = get_norm_phase_sdf(mu, irr_params);
 
     % Generate the random phase realization (note: 'D_mu' must be defined externally).
-    detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft);
+    detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft, data_type);
 
     % Propagate the scintillation field.
     propagated_scint_field = get_propagated_field(mu, detrended_phase_realization);

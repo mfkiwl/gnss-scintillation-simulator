@@ -33,19 +33,20 @@ for city_str = cities_str_array.'
             for severity_str = severity_str_array.'
                 for carrier_to_noise_ratio = data_set_params.general.carrier_to_noise_ratios
                     for mc_run = 1 : monte_carlo_runs
-                        real_received_signal_float16_array = zeros(data_set_params.general.simulation_time / data_set_params.general.dt,1);
-                        imag_received_signal_float16_array = zeros(data_set_params.general.simulation_time / data_set_params.general.dt,1);
+                        real_received_signal_single_array = zeros(data_set_params.general.simulation_time / data_set_params.general.dt,1);
+                        imag_received_signal_single_array = zeros(data_set_params.general.simulation_time / data_set_params.general.dt,1);
                         
                         for frequency_str = frequency_str_array
 
                             frequency_idx = find(frequency_str_array == frequency_str);
 
-                            thermal_noise_double_array = get_thermal_noise( ...
+                            thermal_noise_single_array = get_thermal_noise( ...
                                 data_set_params.general.simulation_time, ...
                                 data_set_params.general.dt, ...
                                 rx_mean_power, ...
                                 carrier_to_noise_ratio, ...
-                                B);
+                                B, ...
+                                'data_type', 'single');
 
                             U_str = ['U_', char(frequency_str)];
                             mu0_str = ['mu0_', char(frequency_str)];
@@ -57,14 +58,18 @@ for city_str = cities_str_array.'
                             rhof_veff_ratio_str = ['rhof_veff_ratio_', char(frequency_str)];
                             rhof_veff_ratio = data_set_params.specific.(city_str).rhof_veff_table{drift_idx, prn_str}.(rhof_veff_ratio_str);
 
-                            scint_double_array = get_scintillation_time_series( ...
+                            scint_single_array = get_scintillation_time_series( ...
                                 data_set_params.general, ...
                                 irr_params, ...
-                                rhof_veff_ratio);
+                                rhof_veff_ratio, ...
+                                'data_type', 'single');
                             
-                            received_signal_float16_array = single(scint_double_array + thermal_noise_double_array);
-                             real_received_signal_float16_array(:,frequency_idx) = real(received_signal_float16_array);
-                            imag_received_signal_float16_array(:,frequency_idx) = imag(received_signal_float16_array);
+                            scint_single_array_sliced = scint_single_array(1:data_set_params.general.simulation_time/data_set_params.general.dt).';
+
+                            received_signal_single_array = scint_single_array_sliced + thermal_noise_single_array;
+
+                            real_received_signal_single_array(:,frequency_idx) = real(received_signal_single_array);
+                            imag_received_signal_single_array(:,frequency_idx) = imag(received_signal_single_array);
                         end
                     end
                 end

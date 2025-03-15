@@ -1,4 +1,4 @@
-function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft, seed)
+function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft, data_type)
 % get_phase_realization
 %
 % Syntax:
@@ -13,7 +13,7 @@ function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_m
 % Inputs:
 %   norm_phase_sdf - Normalized phase spectral density function values
 %   D_mu           - Vector of frequency spacing or related DFT increment
-%   seed           - Seed for the random number generator to ensure repeatability
+%   data_type      - Char or string with the data type ('double', 'single', 'half', ...)
 %
 % Outputs:
 %   phase_realization - The real-valued phase realization in the time domain
@@ -71,7 +71,7 @@ function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_m
 
     % Generate Gaussian random complex vector (xi). 
     % Note that the variance of xi is sqrt(2).
-    xi = randn(1, nfft) + 1i * randn(1, nfft);
+    xi = randn(1, nfft, data_type) + 1i * randn(1, nfft, data_type);
 
     % Compute the square-root of the normalized phase SDF.
     root_norm_phase_sdf = sqrt(norm_phase_sdf * D_mu / (2*pi));
