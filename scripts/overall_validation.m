@@ -1,5 +1,5 @@
 %% Initialization
-clear all; clc;
+clearvars; clc;
 
 addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
@@ -9,22 +9,24 @@ general_params = get_general_parameters();
 rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_params);
 irr_params_set = get_irregularity_parameters();
 
-extrapolated_irr_params = struct('Strong', [], 'Moderate', [], 'Weak', []);
+extrapolated_irr_params = struct('strong', [], 'moderate', [], 'weak', []);
 
 % Note: The `rhof_veff_ratio_vector` array do not depend on the
 % irregularity parameters U, p1, p2 and mu0. Therefore, it is sufficient to
 % extrapolate it only for one scintillation scenario, which is in this case
 % the Strong case.
-[extrapolated_irr_params.Strong, rhof_veff_ratio_vector] = ...
-    freq_extrapolate(irr_params_set.Strong, general_params, rhof_veff_ratio_L1);
-[extrapolated_irr_params.Moderate, ~] = ...
-    freq_extrapolate(irr_params_set.Moderate, general_params, rhof_veff_ratio_L1);
-[extrapolated_irr_params.Weak, ~] = ...
-    freq_extrapolate(irr_params_set.Weak, general_params, rhof_veff_ratio_L1);
+[extrapolated_irr_params.strong, rhof_veff_ratio_vector] = ...
+    freq_extrapolate(irr_params_set.strong, general_params, rhof_veff_ratio_L1);
+[extrapolated_irr_params.moderate, ~] = ...
+    freq_extrapolate(irr_params_set.moderate, general_params, rhof_veff_ratio_L1);
+[extrapolated_irr_params.weak, ~] = ...
+    freq_extrapolate(irr_params_set.weak, general_params, rhof_veff_ratio_L1);
 
 %% Scintillation Time Series Generation
 scenarios = fieldnames(extrapolated_irr_params);
 frequencies = {'L1', 'L2', 'L5'};
+
+seed = 1;
 
 scint_field_struct = struct();
 norm_phase_sdf_struct = struct();
@@ -44,8 +46,8 @@ for i = 1:numel(scenarios)
         get_scintillation_time_series( ...
             general_params, ...
             extrapolated_irr_params.(scenario).(freq), ...
-            rhof_veff_ratio_vector(j) ...
-            );
+            rhof_veff_ratio_vector(j), ...
+            seed);
     end
 end
 

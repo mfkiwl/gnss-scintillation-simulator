@@ -1,4 +1,4 @@
-function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft, data_type)
+function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft, seed, data_type)
 % get_phase_realization
 %
 % Syntax:
@@ -13,6 +13,7 @@ function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_m
 % Inputs:
 %   norm_phase_sdf - Normalized phase spectral density function values
 %   D_mu           - Vector of frequency spacing or related DFT increment
+%   seed           - Seed for the generation of the complex random variable
 %   data_type      - Char or string with the data type ('double', 'single', 'half', ...)
 %
 % Outputs:
@@ -69,6 +70,7 @@ function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_m
 %   ORCID: https://orcid.org/0000-0003-0412-5583
 %   Email: rdlfresearch@gmail.com
 
+    rng(seed);
     % Generate Gaussian random complex vector (xi). 
     % Note that the variance of xi is sqrt(2).
     xi = randn(1, nfft, data_type) + 1i * randn(1, nfft, data_type);

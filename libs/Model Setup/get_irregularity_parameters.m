@@ -71,16 +71,16 @@ function irregularity_params = get_irregularity_parameters(varargin)
         all(isfield(x, {'U', 'mu0', 'p1', 'p2'}));
     
     % Add parameters for each condition using the default structs
-    addParameter(pInput, 'Strong', defaultSevere, validateConditionStruct);
-    addParameter(pInput, 'Moderate', defaultModerate, validateConditionStruct);
-    addParameter(pInput, 'Weak', defaultWeak, validateConditionStruct);
+    addParameter(pInput, 'strong', defaultSevere, validateConditionStruct);
+    addParameter(pInput, 'moderate', defaultModerate, validateConditionStruct);
+    addParameter(pInput, 'weak', defaultWeak, validateConditionStruct);
     
     % Parse user-supplied name-value pairs
     parse(pInput, varargin{:});
     
     %% Build the output struct with the irregularity parameters for each condition
     irregularity_params = struct();
-    irregularity_params.Strong   = pInput.Results.Strong;
-    irregularity_params.Moderate = pInput.Results.Moderate;
-    irregularity_params.Weak     = pInput.Results.Weak;
+    irregularity_params.strong   = pInput.Results.strong;
+    irregularity_params.moderate = pInput.Results.moderate;
+    irregularity_params.weak     = pInput.Results.weak;
 end

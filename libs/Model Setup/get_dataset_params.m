@@ -57,7 +57,7 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
 
     % Get irregularity parameters (placeholder, modify as needed)
     L1_irr_params_set = get_irregularity_parameters();
-    severity_names = ["Weak", "Moderate", "Strong"];
+    severity_names = ["strong", "moderate", "weak"];
     for severity_name = severity_names
         [U_L2, mu0_L2] = local_extrapolate(L1_irr_params_set.(severity_name).U, ...
             L1_irr_params_set.(severity_name).mu0, ...
