@@ -33,8 +33,8 @@ for city_str = cities_str_array.'
             for severity_str = severity_str_array.'
                 for carrier_to_noise_ratio = data_set_params.general.carrier_to_noise_ratios
                     for mc_run = 1 : monte_carlo_runs
-                        real_received_signal_single_array = zeros(data_set_params.general.simulation_time / data_set_params.general.dt,1);
-                        imag_received_signal_single_array = zeros(data_set_params.general.simulation_time / data_set_params.general.dt,1);
+                        received_multi_freq_signal_struct = struct('real', struct(frequency_str_array(1), [], frequency_str_array(2), [], frequency_str_array(3), []), ...
+                            'imag', struct(frequency_str_array(1), [], frequency_str_array(2), [], frequency_str_array(3), []));
                         
                         for frequency_str = frequency_str_array
 
@@ -68,8 +68,8 @@ for city_str = cities_str_array.'
 
                             received_signal_single_array = scint_single_array_sliced + thermal_noise_single_array;
 
-                            real_received_signal_single_array(:,frequency_idx) = real(received_signal_single_array);
-                            imag_received_signal_single_array(:,frequency_idx) = imag(received_signal_single_array);
+                            received_multi_freq_signal_struct.real.(frequency_str_array(frequency_idx)) = real(received_signal_single_array);
+                            received_multi_freq_signal_struct.imag.(frequency_str_array(frequency_idx)) = imag(received_signal_single_array);
                         end
                     end
                 end
