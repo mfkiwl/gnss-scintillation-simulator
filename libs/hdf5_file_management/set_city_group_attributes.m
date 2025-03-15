@@ -35,5 +35,5 @@ function set_city_group_attributes(filename, city, attributes)
         h5writeatt(file_path, group_path, attr_name, attr_value);
     end
     
-    fprintf('Attributes set for group %s in file %s\n', group_path, file_path);
+    %fprintf('Attributes set for group %s in file %s\n', group_path, file_path);
 end
