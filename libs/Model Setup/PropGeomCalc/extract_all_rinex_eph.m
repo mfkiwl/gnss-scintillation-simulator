@@ -67,7 +67,6 @@ else
     fprintf('Using ephemeris file %s \n', ephfile)
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Extract the 21-element ephemeris records from the RINEX file.
 [eph_all, ~] = rinexe(ephfile);
 

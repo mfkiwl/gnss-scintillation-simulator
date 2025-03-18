@@ -1,43 +1,40 @@
-function label = get_label_scint(scint_field, sampling_interval, varargin)
+function label = get_label_scint(severity_str, scint_field, sampling_interval, varargin)
 % get_label_scint
 %
 % Syntax:
-%   label = get_label_scint(scint_field, sampling_interval, varargin)
+%   label = get_label_scint(severity_str, scint_field, sampling_interval, varargin)
 %
 % Description:
-%   Computes the normalized autocorrelation of the signal intensity of the scintillation
-%   field at two specified time lags ("lower" and "upper") and assigns a label based on these
-%   values.
-%
-%   The intensity of the scintillation signal is defined as:
-%       I(n) = |scint_field(n)|^2
-%
-%   The autocorrelation function (ACF) of I(n) at lag m is defined as:
-%       R(m) = (sum_{n=1}^{N-m} I(n) * I(n+m)) / (sum_{n=1}^{N} I(n)^2)
-%
-%   This normalization ensures that R(0) = 1, which is equivalent to the MATLAB command:
-%       xcorr(I, 'coeff')
-%
-%   Our approach computes R(m) directly at the two desired lags (lower and upper). The 
-%   function then assigns a label according to the following criteria:
-%       - 'long'   if R(lower) > threshold and R(upper) > threshold,
-%       - 'medium' if R(lower) > threshold but R(upper) < threshold,
-%       - 'short'  otherwise.
+%   This function computes the normalized autocorrelation of the intensity 
+%   (I = |scint_field|^2) of a scintillation field at two specified lags defined 
+%   by the 'lower_time' and 'upper_time' parameters. The autocorrelation values 
+%   at these lags are compared against a threshold (default: exp(-1)) to classify 
+%   the signal's decorrelation time as 'long', 'medium', or 'short'. The output 
+%   label is constructed by concatenating the input severity category with the 
+%   decorrelation classification (e.g., 'weak_long').
 %
 % Inputs:
+%   severity_str      - String indicating the scintillation severity category.
 %   scint_field       - Complex vector representing the scintillation field.
-%   sampling_interval - Scalar, time (in seconds) between samples.
+%   sampling_interval - Scalar specifying the time (in seconds) between samples.
 %
 % Optional Name-Value Pair Inputs:
-%   'lower_time'      - Time (in seconds) for the lower lag evaluation (default: 0.5).
-%   'upper_time'      - Time (in seconds) for the upper lag evaluation (default: 2.0).
+%   'lower_time'      - Time (in seconds) corresponding to the lower lag for 
+%                       autocorrelation evaluation (default: 0.5).
+%   'upper_time'      - Time (in seconds) corresponding to the upper lag for 
+%                       autocorrelation evaluation (default: 2.0).
 %
 % Outputs:
-%   label - String: 'long', 'medium', or 'short'.
+%   label - A string that combines the input severity category with the 
+%           decorrelation classification ('_long', '_medium', or '_short').
 %
-% Example:
-%   field = randn(30000,1) + 1j*randn(30000,1);
-%   label = get_label_scint(field, 0.01, 'lower_time', 0.5, 'upper_time', 2.0);
+% Error Conditions:
+%   - Throws an error if lower_time is not less than upper_time.
+%   - Throws an error if the signal is too short to compute autocorrelation at 
+%     the specified lags.
+%
+% Notes:
+%   - The autocorrelation is computed using MATLAB's autocorr function.
 %
 % Author:
 %   Rodrigo de Lima Florindo
@@ -52,6 +49,11 @@ function label = get_label_scint(scint_field, sampling_interval, varargin)
     lower_time = p.Results.lower_time;
     upper_time = p.Results.upper_time;
     
+    % Ensure that lower_time is less than upper_time.
+    if lower_time >= upper_time
+        error('The lower_time must be less than the upper_time.');
+    end
+    
     % Compute the intensity of the scintillation signal.
     intensity = abs(scint_field).^2;
     N = length(intensity);
@@ -64,20 +66,26 @@ function label = get_label_scint(scint_field, sampling_interval, varargin)
         error('Signal is too short to compute autocorrelation at the specified lags.');
     end
     
-    % Compute the normalized autocorrelation at the specified lags:
-    % R(m) = (sum_{n=1}^{N-m} I(n)*I(n+m)) / (sum_{n=1}^{N} I(n)^2)
-    R_lower = sum(intensity(1:N-lag_lower) .* intensity(1+lag_lower:N)) / sum(intensity.^2);
-    R_upper = sum(intensity(1:N-lag_upper) .* intensity(1+lag_upper:N)) / sum(intensity.^2);
+    % Compute the autocorrelation using MATLAB's autocorr function.
+    % We compute up to the upper lag.
+    [acf, ~] = autocorr(double(intensity), 'NumLags', lag_upper);
     
-    % Define a threshold (default is exp(-1)).
+    % Note: acf(1) corresponds to lag 0.
+    R_lower = acf(lag_lower + 1);
+    R_upper = acf(lag_upper + 1);
+    
+    % Define the threshold (default is exp(-1)).
     threshold = exp(-1);
     
-    % Assign label based on the computed autocorrelation values:
+    % Classify based on the threshold.
     if (R_lower > threshold) && (R_upper > threshold)
-        label = 'long';
-    elseif (R_lower > threshold) && (R_upper < threshold)
-        label = 'medium';
+        decorrelation_char = 'long';
+    elseif (R_lower > threshold) && (R_upper <= threshold)
+        decorrelation_char = 'medium';
     else
-        label = 'short';
+        decorrelation_char = 'short';
     end
+    
+    % Combine severity string with the decorrelation classification.
+    label = [char(severity_str), '_', decorrelation_char];
 end

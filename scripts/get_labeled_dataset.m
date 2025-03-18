@@ -1,10 +1,11 @@
 %% Main Simulation Script for GNSS Scintillation Dataset Generation
 %
 % Syntax:
-%   run_main_simulation_script
+%   get_labeled_dataset
 %
 % Description:
-%   This script generates GNSS scintillation datasets by sweeping over various 
+%   This script generates GNSS scintillation datasets, for training deep 
+%   learning algorithms for classifying scintillation events, by sweeping over various 
 %   simulation parameters (drift velocities, CN0 values, severity levels, Monte Carlo
 %   runs, and frequency bands). For each parameter combination, the script:
 %       - Generates the scintillation time series.
@@ -19,13 +20,9 @@
 %   simulation, and the overall progress percentage. A final summary log displays the
 %   total elapsed time and average time per city.
 %
-% Example:
-%   run_main_simulation_script
-%
-% Author:
-%   Rodrigo de Lima Florindo
-%   ORCID: https://orcid.org/0000-0003-0412-5583
-%   Email: rdlfresearch@gmail.com
+% Author: Rodrigo de Lima Florindo
+% ORCID: https://orcid.org/0000-0003-0412-5583
+% Email: rdlfresearch@gmail.com
 
 %% Initialization
 clearvars; clc;
@@ -33,20 +30,44 @@ addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
 
 %% Parameter Setup
-drift_velocities_amount = 1;  % number of drift velocities (e.g., from 25 to 125 m/s)
-carrier_to_noise_ratios_amount = 1; % number of CN0 values (e.g., from 25 to 45 dB-Hz)
-monte_carlo_runs = 1;
-mask_angle_deg = 15;  % mask angle (degrees)
+% Number of drift velocities (e.g., from 25 to 125 m/s)
+drift_velocities_amount = 2;
+% Number of CN0 values (e.g., from 25 to 45 dB-Hz)
+carrier_to_noise_ratios_amount = 2;
+% Amount cities to be considered in the simulations
+cities_amount = 2;
+% Amount of Monte Carlo runs
+monte_carlo_runs = 2;
 
-data_set_params = get_dataset_params(drift_velocities_amount, carrier_to_noise_ratios_amount, mask_angle_deg);
+% mask angle (degrees) configures the minimum elevation angle for the
+% satellites to be considered in the geometry simulations
+mask_angle_deg = 15;  
+
+% get_dataset_params is a function developed to obtain all general and
+% specific parameters that will be used to generate the complex
+% scintillation time series.
+data_set_params = get_dataset_params(drift_velocities_amount, carrier_to_noise_ratios_amount, cities_amount, mask_angle_deg);
 cities_str_array = string(fieldnames(data_set_params.specific));
 severity_str_array = string(fieldnames(data_set_params.general.irr_params));
 
+% Here, we have considered that the reciever sampling frequency is 20MHz
+% arbitrarily. This is used to compute the thermal noise variance. NOTE:
+% Insterestingly, changing its value do not affects the value of the noise
+% variance, given that only the post-correlated noise is simulated.
 receiver_sampling_frequency = 2e7;
 B = receiver_sampling_frequency / 2;
+
+% A received mean power of 1 was arbitrarily chosen here without loss of
+% generality. This is feasible if one considers that most of the
+% scintillation time series amplitude is obtained after performing a
+% detrending operation, which removes the low-frequency trend related to
+% the free-space path loss.
 rx_mean_power = 1;
 frequency_str_array = ["L1", "L2", "L5"];
 
+% For initial tests, we've assumed a 'simplified' data set, which only
+% comprises few iterations of drift velocities, carrier to noise ratios and
+% Monte Carlo runs.
 filename = "simplified_cpsm_dataset.h5";
 
 % Global HDF5 file attributes.
@@ -62,29 +83,46 @@ hdf5_file_attributes = struct(...
     'carrier_to_noise_ratios_amount', data_set_params.general.carrier_to_noise_ratios_amount, ...
     'carrier_to_noise_ratios', data_set_params.general.carrier_to_noise_ratios);
 
-% Initialize HDF5 file (with versioning/overwrite handling).
+% Initialize HDF5 file (with versioning/overwrite handling). NOTE:
+% versioning here simply refers to a number being put on the right side of
+% its name if the user don't want to overwrite the previous hdf5 file with
+% the same name.
 new_filename = initialize_hdf5_file(filename, cities_str_array.', hdf5_file_attributes);
 
-% Seed counter for random number generation.
+% Seed counter for random number generation. NOTE: At each for loop
+% iteration (with the exception on the frequency bands loops), a different
+% random seed is used, to ensure randomness and, consequently, 
+% meaningfulness of each time series.
 seed_counter = 0;
 
-%% Compute Total Iterations (for overall progress)
+%% Compute Total Iterations (for overall progress evaluation)
 total_iter = 0;
 for city = cities_str_array.'
     prn_list = data_set_params.specific.(char(city)).prn_string_array;
     total_iter = total_iter + numel(prn_list) * drift_velocities_amount * numel(severity_str_array) * ...
                  numel(data_set_params.general.carrier_to_noise_ratios) * monte_carlo_runs;
 end
+
 overall_iter = 0;
 overall_tic = tic;  % Start overall timer
 
-fprintf('Starting simulation parameter sweeps...\n');
+%% Pre-allocate a single label array for all frequencies
+% Each iteration (over prn, drift, severity, CN0 and MC run) produces one label
+% per frequency band.
+% NOTE: `all_labels` string array will be used to store the outputed labels
+% in order to evaluate the frequency of appearing of each label.
+total_label_count = total_iter * numel(frequency_str_array);
+all_labels = strings(total_label_count, 1);
+counter_all_labels = 0;
+
+fprintf('Sweeping parameters over %d total iterations...\n', total_iter);
 
 %% Main Loop: Process Each City
 city_times = zeros(numel(cities_str_array),1);  % Store elapsed time per city
 city_count = 0;
 for city_str = cities_str_array.'
     city_count = city_count + 1;
+    fprintf('\n--- Processing City: %s ---\n', char(city_str));
     city_tic = tic;  % Start timer for current city
     
     % Set city-level attributes.
@@ -92,24 +130,46 @@ for city_str = cities_str_array.'
         'rx_init_llh_radians', data_set_params.specific.(city_str).rx_init_llh, ...
         'rx_velocity_m_per_sec', data_set_params.specific.(city_str).rx_velocity, ...
         'prn_str_array', data_set_params.specific.(city_str).prn_string_array);
+    % Insert the city attributes using the function `set_city_group_attributes`
     set_city_group_attributes(new_filename, city_str, city_attributes);
     
     % Process each PRN for the city.
     prn_list = data_set_params.specific.(char(city_str)).prn_string_array;
     for prn_str = prn_list
-        % (No per-PRN print to avoid overprinting.)
+        fprintf('  Processing PRN: %s\n', char(prn_str));
         for drift_idx = 1:drift_velocities_amount
+            fprintf('    Drift Velocity index: %d\n', drift_idx);
             for severity_str = severity_str_array.'
+                fprintf('      Severity: %s\n', char(severity_str));
                 for carrier_to_noise_ratio = data_set_params.general.carrier_to_noise_ratios
+                    fprintf('        CN0: %.2f dB-Hz\n', carrier_to_noise_ratio);
                     for mc_run = 1:monte_carlo_runs
+                        fprintf('          Monte Carlo run: %d\n', mc_run);
+                        % Compute the amount of samples in the simulation
                         num_samples = data_set_params.general.simulation_time / data_set_params.general.dt;
+                        
+                        % Pre-allocated the 'single' types arrays to
+                        % receive the real and imaginary parts of the
+                        % received signal. NOTE: The single type is
+                        % equivalent to the float32 data type.
                         real_received_signal = zeros(num_samples, numel(frequency_str_array), 'single');
                         imag_received_signal = zeros(num_samples, numel(frequency_str_array), 'single');
+
+                        % Build a struct that will hold the labels for the
+                        % ionospheric scintillation types. NOTE: The labels
+                        % are constructed as a combination of the severity 
+                        % level {'weak', 'moderate', 'strong'} and the category
+                        % of the decorrelation time value {'short',
+                        % 'medium', 'long'}.
                         labels_struct = struct('label_L1', string(), 'label_L2', string(), 'label_L5', string());
                         
                         for frequency_str = frequency_str_array
+                            % Obtain the frequency index correponding to
+                            % the current frequency_str.
                             frequency_idx = find(frequency_str_array == frequency_str);
                             
+                            % Compute the complex thermal noise time
+                            % series that compounds the received signal
                             thermal_noise = get_thermal_noise( ...
                                 data_set_params.general.simulation_time, ...
                                 data_set_params.general.dt, ...
@@ -118,8 +178,11 @@ for city_str = cities_str_array.'
                                 B, ...
                                 'data_type', 'single');
                             
+                            % Build auxiliary strings to facilitate
+                            % handling the parameters of `irr_params`.
                             U_str = ['U_', char(frequency_str)];
                             mu0_str = ['mu0_', char(frequency_str)];
+
                             irr_params.U = data_set_params.general.irr_params.(severity_str).(U_str);
                             irr_params.mu0 = data_set_params.general.irr_params.(severity_str).(mu0_str);
                             irr_params.p1 = data_set_params.general.irr_params.(severity_str).p1;
@@ -127,7 +190,10 @@ for city_str = cities_str_array.'
                             
                             rhof_veff_ratio_str = ['rhof_veff_ratio_', char(frequency_str)];
                             rhof_veff_ratio = data_set_params.specific.(city_str).rhof_veff_table{drift_idx, prn_str}.(rhof_veff_ratio_str);
-                            
+
+                            % Obtain the propagated scintillation field at
+                            % the receiver plane based on the current
+                            % general and specific parameters.
                             scint_series = get_scintillation_time_series( ...
                                 data_set_params.general, ...
                                 irr_params, ...
@@ -136,13 +202,33 @@ for city_str = cities_str_array.'
                                 'data_type', 'single');
                             scint_series_sliced = scint_series(1:num_samples).';
                             
-                            % Compute label for current frequency.
+                             % Compute label for current frequency.
+                            computed_label = get_label_scint( ...
+                                severity_str, ...
+                                scint_series_sliced, ...
+                                data_set_params.general.dt, ...
+                                'lower_time', 1, ...
+                                'upper_time', 2);
+
+                            % Store label in a temporary struct.
                             label_field = ['label_', char(frequency_str)];
-                            labels_struct.(label_field) = get_label_scint(scint_series_sliced, data_set_params.general.dt, ...
-                                'lower_time', 0.5, 'upper_time', 2.0);
-                            
+                            labels_struct.(label_field) = computed_label;
+
+                            % Also store the computed label in the global all_labels array.
+                            counter_all_labels = counter_all_labels + 1;
+                            all_labels(counter_all_labels) = computed_label;
+
+                            % Build the received signal simply as the sum
+                            % of the propagated scintillation field with
+                            % the thermal noise
                             received_signal = scint_series_sliced + thermal_noise;
                             
+                            % Store the real and imaginary parts of the
+                            % received signal as separate matrices. NOTE:
+                            % Each matrix have the dimensions
+                            % (`num_samples`×3), where the columns refers
+                            % to the frequencies bands L1, L2 and L5,
+                            % respectively.
                             real_received_signal(:, frequency_idx) = real(received_signal);
                             imag_received_signal(:, frequency_idx) = imag(received_signal);
                         end
@@ -173,7 +259,11 @@ for city_str = cities_str_array.'
                         write_received_signal_to_hdf5(new_filename, city_str, ...
                             real_received_signal, imag_received_signal, ...
                             dataset_attributes, 'chunk_size', [10000, 3], 'deflate_level', 4);
-                        
+                         % Print iteration progress for the current parameter combination.
+
+                        fprintf('            Iteration %d/%d completed -- City: %s, PRN: %s, Drift idx: %d, Severity: %s, CN0: %.2f, MC run: %d\n', ...
+                            overall_iter, total_iter, char(city_str), char(prn_str), drift_idx, char(severity_str), carrier_to_noise_ratio, mc_run);
+
                         overall_iter = overall_iter + 1;
                         seed_counter = seed_counter + 1;
                     end
@@ -203,10 +293,23 @@ for i = 1:numel(cities_str_array)
     fprintf('   %s: %s\n', char(cities_str_array(i)), sec2time(city_times(i)));
 end
 
-%% Helper function: sec2time converts seconds to HH:MM:SS format.
+%% Plot Frequency of All Label Appearances
+figure;
+[uniqueLabels, ~, idx] = unique(all_labels);
+counts = accumarray(idx, 1);
+bar(categorical(uniqueLabels), counts);
+xlabel('Label');
+ylabel('Frequency');
+title('Frequency of All Labels (L1, L2, L5)');
+ax = gca;
+ax.TickLabelInterpreter = 'none';  % Disable TeX interpreter for tick labels
+
+
+% Helper function: sec2time converts seconds to HH:MM:SS format.
 function time_str = sec2time(sec)
     hrs = floor(sec / 3600);
     mins = floor(mod(sec,3600) / 60);
     secs = mod(sec,60);
     time_str = sprintf('%02d:%02d:%05.2f', hrs, mins, secs);
 end
+
