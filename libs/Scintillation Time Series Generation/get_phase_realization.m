@@ -65,10 +65,9 @@ function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_m
 % [2] C. Rino, The Theory of Scintillation with Applications in Remote
 %     Sensing. John Wiley & Sons, 2011
 %
-% Author:
-%   Rodrigo de Lima Florindo
-%   ORCID: https://orcid.org/0000-0003-0412-5583
-%   Email: rdlfresearch@gmail.com
+% Author: Rodrigo de Lima Florindo
+% ORCID: https://orcid.org/0000-0003-0412-5583
+% Email: rdlfresearch@gmail.com
 
     rng(seed);
     % Generate Gaussian random complex vector (xi). 
