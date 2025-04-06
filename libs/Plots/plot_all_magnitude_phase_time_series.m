@@ -74,7 +74,8 @@ function plot_all_magnitude_phase_time_series(scint_field_struct, time_vector)
             scint_field = scint_field_struct.(scenario).(freq);
             
             truncated_scint_field = scint_field(1:length(time_vector));
-            plot(time_vector, phase(truncated_scint_field), colors{j}, 'LineWidth', 1.2);
+            phase_time_series = get_corrected_phase(truncated_scint_field);
+            plot(time_vector, phase_time_series, colors{j}, 'LineWidth', 1.2);
         end
         xlabel('Time (s)', 'FontName', 'Helvetica');
         ylabel('Phase [rad]', 'FontName', 'Helvetica');

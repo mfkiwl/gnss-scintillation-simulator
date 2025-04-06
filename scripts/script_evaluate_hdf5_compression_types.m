@@ -1,7 +1,7 @@
 % script_evaluate_hdf5_compression_types.m
 %
 % Description:
-% This script generates a scintillation time series for L1 (Severe case),
+% This script generates a scintillation time series for L1 (strong case),
 % converts it to single precision, and then saves it to an HDF5 file using
 % various compression options. Since HDF5 does not natively support complex
 % numbers, the real and imaginary parts are stored separately.
@@ -11,9 +11,9 @@
 % 1. Add Required Paths
 %    - Adds the necessary library and cache directories to the MATLAB path.
 %
-% 2. Model Setup & Time Series Generation (Severe, L1)
+% 2. Model Setup & Time Series Generation (strong, L1)
 %    - Retrieves general simulation parameters and the rhof/veff ratio for L1.
-%    - Retrieves the irregularity parameters and extrapolates them for the Severe case.
+%    - Retrieves the irregularity parameters and extrapolates them for the strong case.
 %    - Generates a complex double scintillation time series for L1 using the custom algorithm.
 %
 % 3. Convert to Single Precision
@@ -53,17 +53,17 @@ clearvars; clc;
 addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
 
-%% Model Setup & Time Series Generation (Severe, L1)
+%% Model Setup & Time Series Generation (strong, L1)
 general_params = get_general_parameters();
 rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_params);
 irr_params_set = get_irregularity_parameters();
-[extrapolated_irr_params.Severe, rhof_veff_ratio_vector] = ...
-    freq_extrapolate(irr_params_set.Severe, general_params, rhof_veff_ratio_L1);
+[extrapolated_irr_params.strong, rhof_veff_ratio_vector] = ...
+    freq_extrapolate(irr_params_set.strong, general_params, rhof_veff_ratio_L1);
 
 seed = 1;
 [scint_L1, ~, ~, ~, ~] = get_scintillation_time_series( ...
     general_params, ...
-    extrapolated_irr_params.Severe.L1, ...
+    extrapolated_irr_params.strong.L1, ...
     rhof_veff_ratio_vector(1), ...
     seed);
 % scint_L1 is a complex double time series

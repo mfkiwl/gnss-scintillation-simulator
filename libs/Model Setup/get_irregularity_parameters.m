@@ -22,17 +22,17 @@ function irregularity_params = get_irregularity_parameters(varargin)
 %   pairs where the value is a struct with fields 'U', 'mu0', 'p1', and 'p2'.
 %
 % Inputs:
-%   'Strong'   - (Optional) A struct with the fields:
+%   'strong'   - (Optional) A struct with the fields:
 %                    U   - Universal Turbulence Strength
 %                    mu0 - Normalized Break Wavenumber
 %                    p1  - Low-frequency Spectral Index
 %                    p2  - High-frequency Spectral Index
 %                Default: struct('U', 1.0, 'mu0', 1.0, 'p1', 3.0, 'p2', 4.0)
 %
-%   'Moderate' - (Optional) A struct with the same fields as above.
+%   'moderate' - (Optional) A struct with the same fields as above.
 %                Default: struct('U', 0.8, 'mu0', 0.8, 'p1', 2.8, 'p2', 3.8)
 %
-%   'Weak'     - (Optional) A struct with the same fields as above.
+%   'weak'     - (Optional) A struct with the same fields as above.
 %                Default: struct('U', 0.6, 'mu0', 0.6, 'p1', 2.5, 'p2', 3.5)
 %
 % Outputs:

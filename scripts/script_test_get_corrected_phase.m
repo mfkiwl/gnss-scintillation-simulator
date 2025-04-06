@@ -83,7 +83,7 @@ for seed = 1:seed_stop
     phase_raw = unwrap(angle(scint_field)).';
     
     %% Compute corrected phase using iterative interpolation (via interpft)
-    [phase_int, n_interp] = get_corrected_phase(scint_field);
+    phase_int = get_corrected_phase(scint_field);
     phase_int = phase_int.';
     if seed == 157
         plot(phase_raw - phase_int);
