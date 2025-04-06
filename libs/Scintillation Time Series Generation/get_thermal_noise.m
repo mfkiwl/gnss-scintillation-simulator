@@ -1,5 +1,6 @@
 function thermal_noise = get_thermal_noise(simulation_time, sampling_interval, rx_mean_power, C_over_N0_dBHz, B, varargin)
 % get_thermal_noise
+%
 % Generates additive white Gaussian noise (AWGN) to simulate thermal noise 
 % in a receiver based on specified parameters.
 %
@@ -44,8 +45,8 @@ function thermal_noise = get_thermal_noise(simulation_time, sampling_interval, r
 %   % - sampling_interval = 0.01 seconds
 %   % - rx_mean_power = 1 (linear scale)
 %   % - C/N₀ = 40 dB-Hz
-%   % - B = 20 MHz
-%   thermal_noise = get_thermal_noise(600, 0.01, 1, 40, 2e7, 'single');
+%   % - B = 10 MHz
+%   thermal_noise = get_thermal_noise(600, 0.01, 1, 40, 1e7, 'single');
 %
 % Author: Rodrigo de Lima Florindo
 % ORCID: https://orcid.org/0000-0003-0412-5583

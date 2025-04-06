@@ -1,14 +1,50 @@
-%% Evaluate Precision Loss in Complex Scintillation Time Series (L1, Severe Case)
-% This script generates a complex scintillation time series for the L1
-% frequency (Severe case) using your scintillation model, then converts the
-% series from double precision to single and half precision. It computes error
-% metrics for both amplitude and phase and produces histograms and sample
-% comparisons for both quantities.
+% script_evaluate_variable_types.m
 %
-% Author:
-%   Your Name
-%   Email: your.email@example.com
-%   Date: YYYY-MM-DD
+% Description:
+% This script generates a complex scintillation time series for the L1 frequency
+% (Severe case) using a custom scintillation model, and then converts the series
+% from double precision to both single and half precision formats. It computes error
+% metrics for amplitude and phase, and produces histograms as well as sample comparisons
+% for both quantities to evaluate the precision loss due to conversion.
+%
+% Script Sections:
+%
+% 1. Initialization & Path Setup
+%    - Clears the workspace and command window.
+%    - Adds the necessary library and cache directories to the MATLAB path.
+%
+% 2. Model Setup & Time Series Generation (Severe, L1)
+%    - Retrieves general simulation parameters and the rhof/veff ratio for L1.
+%    - Obtains the irregularity parameters and extrapolates them for the Severe case.
+%    - Generates a complex double precision scintillation time series for L1.
+%
+% 3. Precision Conversion
+%    - Converts the generated complex time series from double to single precision.
+%    - Converts the series to half precision (requires MATLAB R2023a or later).
+%
+% 4. Error Metrics Computation
+%    - Computes amplitude and phase errors by comparing the single and half precision
+%      data against the original double precision series.
+%    - Calculates metrics such as mean squared error (MSE) and maximum error for both amplitude and phase.
+%
+% 5. Results Display
+%    - Displays the computed error metrics in the command window.
+%
+% 6. Visualization
+%    - Generates histograms of the error magnitudes for both amplitude and phase.
+%    - Plots sample comparisons of amplitude and phase between the original, single, and half precision data.
+%
+% Dependencies:
+% This script relies on the following custom functions from the developed library:
+%   - get_general_parameters
+%   - get_rhof_veff_ratio
+%   - get_irregularity_parameters
+%   - freq_extrapolate
+%   - get_scintillation_time_series
+%
+% Author: Rodrigo de Lima Florindo
+% ORCID: https://orcid.org/0000-0003-0412-5583
+% Email: rdlfresearch@gmail.com
 
 clearvars; clc;
 

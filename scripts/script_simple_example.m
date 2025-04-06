@@ -1,54 +1,78 @@
+% script_simple_example.m
+%
+% Description:
+% This script demonstrates the usage of basic functions from the custom library
+% for generating synthetic ionospheric scintillation time series based on phase screen
+% theory. The script performs a single iteration of the model for the 'strong' scenario
+% at the L1 frequency, and it prepares amplitude and phase data for further validation
+% through plotting.
+%
+% Script Sections:
+%
+% 1. Initialization
+%    - Clears the workspace and command window.
+%    - Adds the required library and cache paths.
+%
+% 2. Model Setup
+%    - Retrieves general simulation parameters.
+%    - Obtains the rhof/veff ratio for L1.
+%    - Retrieves the irregularity parameters.
+%    - Performs frequency extrapolation for the strong scintillation case.
+%
+% 3. Scintillation Time Series Generation - Single Iteration
+%    - Selects the 'strong' scenario and L1 frequency.
+%    - Generates a complex scintillation time series using a custom algorithm.
+%
+% 4. Plotting Preparation for Validation
+%    - Constructs a time vector based on the simulation time and time step.
+%    - Computes amplitude and phase from the generated scintillation field.
+%
+% Dependencies:
+% This script relies on the following custom functions from the developed library:
+%   - get_general_parameters
+%   - get_rhof_veff_ratio
+%   - get_irregularity_parameters
+%   - freq_extrapolate
+%   - get_scintillation_time_series
+%
+% Author: Rodrigo de Lima Florindo
+% ORCID: https://orcid.org/0000-0003-0412-5583
+% Email: rdlfresearch@gmail.com
+
 %% Initialization
-clear; clc;
+clearvars; clc;
 
 addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
+
 %% Model Setup
-% Load general simulation parameters and irregularity parameters
 general_params = get_general_parameters();
-irr_params = get_irregularity_parameters();
-irr_params.strong.U = 4;
-% Compute the ratio needed for extrapolation (for L1)
 rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_params);
+irr_params_set = get_irregularity_parameters();
 
-% Extrapolate irregularity parameters for the "strong" scenario
-% Note: extrapolated_strong is a struct with fields L1, L2, L5; we use L1.
-[extrapolated_strong, rhof_veff_ratio_vector] = ...
-    freq_extrapolate(irr_params.strong, general_params, rhof_veff_ratio_L1);
+extrapolated_irr_params = struct('strong', [], 'moderate', [], 'weak', []);
 
-%% Scintillation Time Series Generation for L1
-seed_stop = 1000;
-seeds_diff = [];  % Initialize list of seeds with phase differences
-tol = pi/2;       % Tolerance threshold for phase difference
+% Note: Extrapolate only for the Strong case (the others are computed in the full code)
+[extrapolated_irr_params.strong, rhof_veff_ratio_vector] = ...
+    freq_extrapolate(irr_params_set.strong, general_params, rhof_veff_ratio_L1);
+% The moderate and weak cases are not needed for a single iteration
 
-for seed = 1:seed_stop
-    [scint_field, ~, detrended_phase_realization, ~, ~] = get_scintillation_time_series( ...
+%% Scintillation Time Series Generation - Single Iteration
+% Choose one scenario and one frequency
+scenario = 'strong';
+freq = 'L1';
+
+seed = 1;
+
+[scint_field, norm_phase_sdf, detrended_phase, mu, doppler_frequency] = ...
+    get_scintillation_time_series( ...
         general_params, ...
-        extrapolated_strong.L1, ...
-        rhof_veff_ratio_vector(1), ... % L1 ratio
+        extrapolated_irr_params.(scenario).(freq), ...
+        rhof_veff_ratio_vector(1), ...
         seed);
-    
-    %% Compute amplitude and unwrapped phase from the raw scintillation field
-    amplitude = abs(scint_field).';
-    phase_raw = unwrap(angle(scint_field)).';
-    
-    %% Compute corrected phase using iterative interpolation (via interpft)
-    [phase_int, n_interp] = get_corrected_phase(scint_field);
-    phase_int = phase_int.';
-    if seed == 157
-        plot(phase_raw - phase_int);
-    end
-    %% Check if the corrected phase differs from the raw phase beyond tolerance
-    if max(abs(phase_int - phase_raw)) > tol
-        seeds_diff = [seeds_diff, seed]; %#ok<AGROW>
-    end
-end
 
+%% Plotting functions for validation
+time_vector = 0 : general_params.dt : general_params.simulation_time - general_params.dt;
 
-%% Display the list of seeds with phase differences
-if isempty(seeds_diff)
-    fprintf('No seeds found where the corrected phase differs from the original phase beyond the tolerance of %g.\n', tol);
-else
-    fprintf('Seeds with corrected phase different from original (tolerance %g):\n', tol);
-    disp(seeds_diff);
-end
+amplitude = abs(scint_field.');
+phase = unwrap(angle(scint_field.'));

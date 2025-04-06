@@ -1,15 +1,53 @@
-%% Evaluate HDF5 Compression Options for Single Precision Complex Data
+% script_evaluate_hdf5_compression_types.m
+%
+% Description:
 % This script generates a scintillation time series for L1 (Severe case),
 % converts it to single precision, and then saves it to an HDF5 file using
 % various compression options. Since HDF5 does not natively support complex
 % numbers, the real and imaginary parts are stored separately.
 %
-% Author:
-%   Your Name
-%   Email: your.email@example.com
-%   Date: YYYY-MM-DD
+% Script Sections:
+%
+% 1. Add Required Paths
+%    - Adds the necessary library and cache directories to the MATLAB path.
+%
+% 2. Model Setup & Time Series Generation (Severe, L1)
+%    - Retrieves general simulation parameters and the rhof/veff ratio for L1.
+%    - Retrieves the irregularity parameters and extrapolates them for the Severe case.
+%    - Generates a complex double scintillation time series for L1 using the custom algorithm.
+%
+% 3. Convert to Single Precision
+%    - Converts the generated complex double time series to single precision 
+%      to facilitate HDF5 storage.
+%
+% 4. HDF5 Compression Testing
+%    - Defines a function (test_hdf5_compression_complex) that:
+%         * Splits the complex data into real and imaginary parts.
+%         * Saves these parts to an HDF5 file using specified compression options.
+%         * Measures and returns the save time, load time, and file size.
+%
+% 5. Define and Evaluate Compression Options
+%    - Specifies various HDF5 compression options (with and without the Shuffle filter).
+%    - Evaluates each option by saving and loading the data, and collects performance metrics.
+%
+% 6. Display Results
+%    - Outputs the compression performance metrics (save time, load time, file size)
+%      for each compression option.
+%    - Identifies and displays the best options based on file size and load speed.
+%
+% Dependencies:
+% This script relies on the following custom functions from the developed library:
+%   - get_general_parameters
+%   - get_rhof_veff_ratio
+%   - get_irregularity_parameters
+%   - freq_extrapolate
+%   - get_scintillation_time_series
+%
+% Author: Rodrigo de Lima Florindo
+% ORCID: https://orcid.org/0000-0003-0412-5583
+% Email: rdlfresearch@gmail.com
 
-clear; clc;
+clearvars; clc;
 
 %% Add required paths (adjust as needed)
 addpath(genpath(fullfile('..','libs')));

@@ -1,7 +1,4 @@
-%% Main Simulation Script for GNSS Scintillation Dataset Generation
-%
-% Syntax:
-%   get_labeled_dataset
+% get_labeled_dataset.m
 %
 % Description:
 %   This script generates GNSS scintillation datasets, for training deep 
