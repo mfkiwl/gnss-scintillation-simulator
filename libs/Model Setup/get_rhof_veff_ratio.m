@@ -27,7 +27,7 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
 %       .gps_bands      : [L1, L2, L5] frequencies in Hz
 %       .c              : Speed of light (m/s)
 %       .ipp_height     : Ionospheric pierce point height (m)
-%       .rx_pos         : Receiver position in [lat [rad], lon [rad], height [m])
+%       .rx_pos         : Receiver position in [lat [rad], long [rad], height [m])
 %       .rx_vel         : Receiver velocity (m/s)
 %       .drift_velocity : Ionospheric drift velocity (m/s)
 %       (additional fields may be present for get_rx_traj, ExtractRINEXeph, etc.)
