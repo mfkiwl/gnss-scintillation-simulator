@@ -1,11 +1,11 @@
-function        satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,origin_llh,h_intercept,rx_v,varargin)
-%USAGE:   satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,origin_llh,h_intercept,rx_v,varargin)
+function        satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,rx_traj_llh,h_intercept,rx_v,varargin)
+%USAGE:   satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,rx_traj_llh,h_intercept,rx_v,varargin)
 %
 %INPUTS:
 %   GPSTIme = [GPS week; seconds of week]
 %   UT_time    =  6 element date time for IGRF 
 %   eph             = RINEX navagation format ephemeris file
-%   origin_llh    = station  [latitude (rad); longitude( rad); height (m)]
+%   rx_traj_llh    = station  [latitude (rad); longitude( rad); height (m)]
 %   Drift            = [downward,eastward,southward] drift mps  
 %
 %OUTPUTS:
@@ -14,7 +14,7 @@ function        satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,origin_llh,h_int
 %   ************GPS Coordinates***********************************************************
 %   sat_llh            = satellite geodetic coordinates (3XN)
 %   ************Station TCS coordinates***************************************************
-%   sat_tcs,  vsat_tcs = satellite state vector in receiver tcs system at origin_llh (3XN)
+%   sat_tcs,  vsat_tcs = satellite state vector in receiver tcs system at rx_traj_llh (3XN)
 %   sat_rng,  sat_rdot = satellite rang & range rate (=> sat_tcs) (3XN)
 %   sat_elev, sat_phi  = satellite elevation & true bearing (NX1)
 %   *************Propagation Reference Coordinates at penetration point*******************
@@ -51,7 +51,7 @@ for nsamp=1:nsamps            %Calculate ecf position & velocity
     [ xsat_ecf(:,nsamp), vsat_ecf(:,nsamp)]=satposvel(GPSTime(2,nsamp),eph);  % changed by Joy
 end
 sat_llh=ecf2llhT(xsat_ecf);         %ECF to geodetic (llh)  
-sat_tcs=llh2tcsT(sat_llh,origin_llh);  %llh to tcs at origin_llh
+sat_tcs=llh2tcsT(sat_llh,rx_traj_llh);  %llh to tcs at rx_traj_llh
 
 %%%%%%%%%%Truncate to visible segment containing UTC_time%%%%%%%%%%%%%%%%%% 
 nVIS=find(sat_tcs(3,:)>=0);
@@ -64,8 +64,8 @@ sat_phi =atan2(sat_tcs(1,:),sat_tcs(2,:));
 
 %Satellite velocity & range rate
 %%% Joy %%%
-for ii = 1:size(origin_llh, 2)
-    D=Rotate_ecf2tcs(origin_llh(:,ii));
+for ii = 1:size(rx_traj_llh, 2)
+    D=Rotate_ecf2tcs(rx_traj_llh(:,ii));
     vsat_tcs(:,ii)=D*vsat_ecf(:,ii)-rx_v;
 end
 %%% 
@@ -75,12 +75,12 @@ sat_rdot=sum(vsat_tcs.*usat_tcs);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fprintf('Calculating %6.2f km penetration points \n',h_intercept/1000)
 %Intercept point geometry
-% satp_llh   = findIntercept(h_intercept,usat_tcs,sat_rnge,origin_llh);
-satp_llh   = findIntercept_LEO(h_intercept,usat_tcs,sat_rnge,origin_llh);
-satp_tcs = llh2tcsT(satp_llh,origin_llh(:,1));
+% satp_llh   = findIntercept(h_intercept,usat_tcs,sat_rnge,rx_traj_llh);
+satp_llh   = findIntercept_LEO(h_intercept,usat_tcs,sat_rnge,rx_traj_llh);
+satp_tcs = llh2tcsT(satp_llh,rx_traj_llh(:,1));
 
 %Convert satellite TCS to xyzp (origin is the piercing point)
-xyzp_tcs=llh2tcsT(origin_llh,satp_llh);
+xyzp_tcs=llh2tcsT(rx_traj_llh,satp_llh);
 xyzp(1,:)=-xyzp_tcs(3,:);  %Component 1 is -z tcs (Downward)  
 xyzp(2,:)= xyzp_tcs(1,:);  %Component 2 is  x tcs (Eastward)
 xyzp(3,:)=-xyzp_tcs(2,:);  %Component 3 is -y tcs (Southward)
@@ -134,7 +134,7 @@ thetaB=thetaB+pi/2;    %Change magnetic angle ref to horizontal.  CLR 2/13/2016
 
 veff=sqrt((C.*vkyz(1,:).^2-B.*vkyz(1,:).*vkyz(2,:)+A.*vkyz(2,:).^2)./(A.*C-B.^2/4));
 satGEOM_struct=struct('eph',eph,...
-    'UT_time',UT_time,'origin_llh',origin_llh',...
+    'UT_time',UT_time,'rx_traj_llh',rx_traj_llh',...
     'h_intercept',h_intercept','a',a,'b',b,'gam_b',gam_b,'Drift',Drift,...
     'xsat_ecf',xsat_ecf,'vsat_tcs',vsat_tcs,'sat_llh',sat_llh, 'sat_tcs',sat_tcs,...
     'sat_rnge',sat_rnge, 'sat_rdot',sat_rdot, 'sat_elev',sat_elev, 'sat_phi',sat_phi,...
