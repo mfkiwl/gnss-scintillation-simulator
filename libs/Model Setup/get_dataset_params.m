@@ -17,7 +17,7 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
 %
 % Dependencies:
 %   get_irregularity_parameters, local_extrapolate, dms_str_2_rad,
-%   extract_all_rinex_eph, UT2GPStime, get_sats_in_los, GenUserTraj,
+%   extract_all_rinex_eph, UT2GPStime, get_sats_in_los, get_rx_traj,
 %   PropGeomCalc.
 %
 % Inputs:
@@ -201,7 +201,7 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
         prn_string_array = get_sats_in_los(ephs, rx_init_llh, rx_velocity, general.date_time, general.simulation_time, mask_angle_deg);
         
         % Build a struct for propagating the user position using the 
-        % `GenUserTraj` function developed by the Colorado Boulder group.
+        % `get_rx_traj` function developed by the Colorado Boulder group.
         % NOTE: This function computes the time series of the user position
         % in latitude, longitude and height (LLH), based on a initial
         % position and its instantaneous velocity.
@@ -211,7 +211,7 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
         user_traj_data.simulation_time = general.simulation_time;
         
         % Generate the receiver trajectory.
-        origin_llh = GenUserTraj(user_traj_data);
+        rx_traj_llh = get_rx_traj(user_traj_data);
         
         % Extract eastward drift velocities (assumed to be in row 2).
         eastward_drift_velocities = general.drift_velocities(2, :);
@@ -237,7 +237,7 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
                     gps_week_in_seconds, ...
                     general.date_time, ...
                     ephs.(prn_str), ...
-                    origin_llh, ...
+                    rx_traj_llh, ...
                     general.ipp_height, ...
                     rx_velocity, ...  % use city-specific receiver velocity
                     general.drift_velocities(:, drift_idx));

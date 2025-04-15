@@ -22,7 +22,7 @@ function general_parameters = get_general_parameters(varargin)
 %   'rx_vel'          - Receiver velocity as a 3x1 vector [v1; v2; v3], where:
 %                           v1 = east-west velocity on the earth arc (m/s, eastward +),
 %                           v2 = north-south velocity on the earth arc (m/s, northward +),
-%                           v3 = up-down velocity (m/s, up +).
+%                           v3 = up-down velocity (m/s, upward +).
 %                       Default: [0; 0; 0].
 %
 %   'date_time'       - Date and time as a vector [YYYY MM DD hh mm ss] or a datetime object.

@@ -24,7 +24,7 @@ function prn_string_array = get_sats_in_los(ephs, receiver_init_llh, receiver_ve
     user_traj_data.rx_pos = receiver_init_llh;
     user_traj_data.rx_vel = receiver_velocity;
     user_traj_data.simulation_time = simulation_time;
-    origin_llh = GenUserTraj(user_traj_data);
+    rx_traj_llh = get_rx_traj(user_traj_data);
 
     % Get the list of satellite PRNs (as a cell array of char).
     prn_list = fieldnames(ephs);
@@ -46,8 +46,8 @@ function prn_string_array = get_sats_in_los(ephs, receiver_init_llh, receiver_ve
         end_sat_llh   = ecf2llhT(end_sat_pos_ecf);
         
         % Convert LLH coordinates to Topocentric Coordinate System (TCS) relative to the receiver.
-        start_sat_tcs = llh2tcsT(start_sat_llh, origin_llh(:,1));
-        end_sat_tcs   = llh2tcsT(end_sat_llh, origin_llh(:,2));
+        start_sat_tcs = llh2tcsT(start_sat_llh, rx_traj_llh(:,1));
+        end_sat_tcs   = llh2tcsT(end_sat_llh, rx_traj_llh(:,2));
         
         % Compute elevation angles using the TCS coordinates.
         start_sat_elev = atan2(start_sat_tcs(3), sqrt(start_sat_tcs(1).^2 + start_sat_tcs(2).^2));
