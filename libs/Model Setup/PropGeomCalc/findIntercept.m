@@ -5,7 +5,7 @@
 %   h_intercept: Desired intercept height (e.g. middle of ionosphere) (m)
 %   u_sat:       Unit vector in direction of satellite (from observer)
 %   rng_sat:     Range from observer to satellite (m)
-%   origin_llh:  Location of observer [lat,lon,alt], (deg, deg, m)
+%   rx_traj_llh:  Location of observer [lat,lon,alt], (deg, deg, m)
 %                                          
 % Output(s)                                
 %   llh_test:    llh coordinates of h_intercept along ray to satellite 
@@ -16,8 +16,8 @@
 h_intercept = 300e3;  % 300 km intercept altitude
 u_sat = [0.4501, -0.8930, -0.0032];
 rng_sat = 3.0980e+06;
-origin_llh = [0.7438   -1.2478  417.0000];
-llh_test = findIntercept1(h_intercept,u_sat,rng_sat,origin_llh)
+rx_traj_llh = [0.7438   -1.2478  417.0000];
+llh_test = findIntercept1(h_intercept,u_sat,rng_sat,rx_traj_llh)
 llh_test = 
   [4.6546e-01
   -1.0967e+00
@@ -39,11 +39,11 @@ llh_test =
 % Revisions:                               
                                            
                                            
-function llh_test = findIntercept(h_intercept,u_sat,rng_sat,origin_llh)
+function llh_test = findIntercept(h_intercept,u_sat,rng_sat,rx_traj_llh)
 
 % Earth radius
 %refEllipsoid = referenceEllipsoid('earth','m');
-%R = rsphere('curve',refEllipsoid,origin_llh(1));
+%R = rsphere('curve',refEllipsoid,rx_traj_llh(1));
 [a,f] = EarthModel;
 b=a-a*f;
 R=(a+b)/2;
@@ -52,7 +52,7 @@ R=(a+b)/2;
 sat_tcs = repmat(rng_sat,3,1).*u_sat;
 
 % Satellite position in lat, long, alt
-sat_llh = tcs2llhT(sat_tcs,origin_llh);
+sat_llh = tcs2llhT(sat_tcs,rx_traj_llh);
 h_sat   = sat_llh(3,:);
 
 % Angle between origin-to-satellite and origin-to-Earth center using law of
@@ -70,4 +70,4 @@ end
 % Location of intercept point in TCS coordinates
 r_tcs =repmat(r_test,3,1).*u_sat;
 % Convert to lat, long, alt
-llh_test = tcs2llhT(r_tcs,origin_llh);
+llh_test = tcs2llhT(r_tcs,rx_traj_llh);
