@@ -1,21 +1,22 @@
-function gen_params = get_general_parameters(varargin)
-% get_general_parameters Returns a struct with general simulation parameters.
+function parsed_input_args = handle_input_args(varargin)
+% handle_input_args Returns a struct with general simulation parameters.
 %
 % Syntax:
-%   general_parameters = get_general_parameters()
-%   general_parameters = get_general_parameters('rx_origin', value, 'rx_vel', value, ...
-%                           'datetime', value, 'prn', value, ...
-%                           'sim_time', value, 'dt', value, ...
-%                           'ipp_height', value, 'drift_velocity', value)
+%   general_parameters = handle_input_args(varargin)
 %
 % Description:
-%   Returns a struct containing various simulation parameters. If the user
-%   supplies values for 'rx_origin', 'rx_vel', 'datetime', 'prn', 'sim_time',
-%   'dt', 'ipp_height', or 'drift_velocity' via name-value pairs, those values will
-%   be used; otherwise, the default values are applied.
+%   Parses the raw name–value pair arguments provided by the user and
+%   returns a single struct containing either the user-supplied values
+%   or appropriate defaults. This function’s primary purpose is to
+%   validate all inputs and ensure there are no conflicting or invalid
+%   parameter combinations before the simulation begins. The input arg
+%   parsing is accomplished in two steps. First, the independent arguments
+%   are parsed, thus checking any inconsistency. Second, the remaining and
+%   dependent arguments are analyzed; the valid values for the dependent
+%   arguments depend on the independent argument values.
 %
 % Inputs (optional, as name-value pairs):
-%   'rx_origin'          - (optional, [rad, rad, m], 3x1 array)
+%   'rx_origin'       - (optional, [rad, rad, m], 3x1 array)
 %                       Receiver position as [latitude; longitude; height].
 %                       Default: [0.3876; 1.9942; 59.6780].
 %   'rx_vel'          - (optional, m/s, 3x1 array) Receiver velocity
@@ -25,17 +26,17 @@ function gen_params = get_general_parameters(varargin)
 %                           v3 = up-down velocity (upward +).
 %                       Default: [0; 0; 0].
 %
-%   'rinex_filepath'      -  (opitional, string) full file path of the RINEX
-%                       file v3.04. If `'rinex_filepath'` is `""`, then this
+%   'rinex_filename' -  (opitional, string) full file path of the RINEX
+%                       file v3.04. If `'rinex_filename'` is `""`, then this
 %                       program tries to download an ephemeris file from
 %                       https://cddis.nasa.gov/archive/gnss/data/daily
 %                       using the `'datetime'` argument to search for.
 %                       Default: ""
 %
-%   'datetime'       -  (optional, datetime) A datetime object representing
+%   'datetime'       -  (optional, datetime or NaN) A datetime object representing
 %                       the specific date and time used as a reference
 %                       point when searching for the a RINES file on CDDIS.
-%                       If `'rinex_filepath'` is not empty, this variable is
+%                       If `'rinex_filename'` is not empty, this variable is
 %                       ignored. We only support RINEX v3.04 or later,
 %                       which was introduced in 2015—so the provided
 %                       datetime must fall in the year 2016 or later.
@@ -52,7 +53,7 @@ function gen_params = get_general_parameters(varargin)
 %                       constellation selection.
 %                       Default: ""
 %
-%   'frequency'       - (optional, string or string array) The desired
+%   'frequency'      -  (optional, string or string array) The desired
 %                       frequency. Must be specified if and only if
 %                       `constellation` is not empty. Valid frequency
 %                       labels for each constellation are:
@@ -70,7 +71,7 @@ function gen_params = get_general_parameters(varargin)
 %                       prompt will pop up to guide the available frequency
 %                       section.
 %
-%   'prn'             - (optional, string or string array) Satellite PRN.
+%   'prn'            -  (optional, string or string array) Satellite PRN.
 %                       If the user knows the exact satellites availabe for
 %                       the desired datetime, they can input their PRNs.
 %                       For instance, for 24-Jun-2021 14:00:00, the user
@@ -88,7 +89,7 @@ function gen_params = get_general_parameters(varargin)
 %                       available satellite selection.
 %                       Default: ""
 %
-%   'sim_time' - (optional, seconds, scalar) Total simulation time.
+%   'sim_time'        - (optional, seconds, scalar) Total simulation time.
 %                       Default: 300
 %
 %   'dt'              - (optional, seconds, scalar) Sampling time.
@@ -106,42 +107,14 @@ function gen_params = get_general_parameters(varargin)
 %                       Default: [0; 100; 0].
 %
 % Outputs:
-%   general_parameters - A struct containing the following fields:
-%       c               - (m/s, scalar) Speed of light in vacuum.
-%       frequency       - (string or string array) Frequencies.
-%       rx              - (struct) Receiver information:
-%                           .origin: rx starting position
-%                             .lat: latitude (rad, scalar)
-%                             .long: longlongitude (rad, scalar)
-%                             .height: height (m, scalar)
-%                           Default values for .origin:
-%                             .lat: 0.3876
-%                             .long: 1.9942
-%                             .height: 59.6780
-%                           .vel: rx velocity
-%                             .westeast: linear west-east velocity (m/s, eastward +, scalar)
-%                             .southnorth: linear south-north velocity (m/s, northward +, scalar)
-%                             .downup: linear down-up velocity (m/s, upward +, scalar)
-%                           Default values for .vel:
-%                             .westeast: 0
-%                             .southnorth: 0
-%                             .downup: 0
-%       datetime        - (datetime) Datetime for the simulation.
-%       prn             - (string or string array) Satellite PRNs.
-%       sim_time - (s, scalar) Total simulation time.
-%       dt              - (s, scalar) Sampling time.
-%       ipp_height      - (m, scalar) IPP height.
-%       drift_vel       - (m/s, struct) Ionosphere drift velocity.
-%                           .x: TODO
-%                           .y: TODO
-%                           .z: TODO
+
 %
 % Example:
 %   % Use default parameters:
-%   params = get_general_parameters();
+%   params = handle_input_args();
 %
 %   % Override rx origin, prn, and constellation:
-%   params = get_general_parameters('rx_origin', [0; 5; 3], 'constellation', 'gps', 'prn', 'G12')
+%   params = handle_input_args('rx_origin', [0; 5; 3], 'constellation', 'gps', 'prn', 'G12')
 %
 % Author:
 %   Rodrigo de Lima Florindo
@@ -155,19 +128,18 @@ function gen_params = get_general_parameters(varargin)
 %% Define default values
 default_rx_origin       = [0.3876; 1.9942; 59.6780];        % [latitude (rad); longitude (rad); height (m)]
 default_rx_vel          = [0; 0; 0];                        % [v1, v2, v3] where: v1 = west-east, v2 = north-south, v3 = up-down velocity
-default_datetime        = datetime([2017 01 02 10 00 00]);  % datetime
-default_rinex_filepath       = "";                               % RINEX file path. Empty string means that a RINEX file should be downloaded from CDDIS
+default_datetime        = NaN;                              % datetime
+default_rinex_filename  = "";                               % RINEX file path. Empty string means that a RINEX file should be downloaded from CDDIS
 default_prn             = "";                               % PRNs. Empty string means that it should be defined interactively
 default_constellation   = "";                               % Constellations. Empty string means that it should be defined interactively
 default_frequency       = "";                               % Default frequency. Empty string means that it should be defined interactively
-default_sim_time = 300;                              % total simulation time in seconds
+default_sim_time        = 300;                              % total simulation time in seconds
 default_dt              = 0.01;                             % sampling time in seconds
 default_ipp_height      = 350e3;                            % IPP height in meters
 default_drift_vel       = [0; 125; 0];                      % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
 
 %% Phase 1: parse the independent arg inputs
-
-    function is_valid = validade_rinex_filepath(x)
+    function is_valid = validade_rinex_filename(x)
         try rinexinfo(x);
             is_valid = true;
         catch
@@ -178,10 +150,10 @@ default_drift_vel       = [0; 125; 0];                      % Ionosphere drift v
 p1 = inputParser;
 % p1.Unmatched will contain all key-values that are not parsed in this step
 p1.KeepUnmatched = true;
-% add rinex_filepath parameter with validation: must be a an empty string or a
+% add rinex_filename parameter with validation: must be a an empty string or a
 % string containing a valid RINEX file
-addParameter(p1, 'rinex_filepath',   default_rinex_filepath, ...
-    @(x) (ischar(x)||isstring(x)) && (validade_rinex_filepath(x)||isempty(x)));
+addParameter(p1, 'rinex_filename',   default_rinex_filename, ...
+    @(x) (ischar(x)||isstring(x)) && (validade_rinex_filename(x)||isempty(x)));
 % Add rx_origin parameter: must be a numeric 3-element vector
 addParameter(p1, 'rx_origin',   default_rx_origin, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
@@ -299,28 +271,29 @@ results = p1.Results;
         end
     end
 
-    function is_valid = validate_datetime(rinex_filepath, datetime)
+    function is_valid = validate_datetime(rinex_filename, datetime)
         if ~isdatetime(datetime)
             is_valid = false;
             return
         end
 
-        if isempty(char(rinex_filepath))
-            if year(datetime) < 2016
-                warning([ ...
-                    'You must must input a datetime with year 2016' ...
-                    'or later in order to download a RINEX file v3.04' ...
-                    ])
-                is_valid = false;
-            else
-                is_valid = true;
-            end
-        else
+        if year(datetime) < 2016
             warning([ ...
-                'You can only pass a datetime if you do not pass' ...
-                'a path of a RINEX file to read from.']);
+                'You must must input a datetime with year 2016' ...
+                'or later in order to download a RINEX file v3.04' ...
+                ])
             is_valid = false;
+            return
         end
+
+        if ~isempty(char(rinex_filename))
+            disp([ ...
+                'Since you passed a RINEX file name and a datetime, ' ...
+                'only the minute and hour of the datetime will be ' ...
+                'used. The year, month, and day will be those ' ...
+                'defined in the RINEX file.']);
+        end
+        is_valid = true;
     end
 
 p2 = inputParser;
@@ -332,10 +305,10 @@ addParameter(p2, 'frequency', default_frequency, ...
 % Add prn parameter: valid strings depend on the set constellation
 addParameter(p2, 'prn',       default_prn, ...
     @(x) validate_prn(p1.Results.constellation, x));
-% Add datetime parameter: must be datetime object and `rinex_filepath`  must be
+% Add datetime parameter: must be datetime object and `rinex_filename`  must be
 % empty
 addParameter(p2, 'datetime',    default_datetime, ...
-    @(x) validate_datetime(p1.Results.rinex_filepath, x));
+    @(x) validate_datetime(p1.Results.rinex_filename, x));
 % rebuild the remaining key-value list only from the unmatched pairs in p1
 unmatched_key_value = reshape([fieldnames(p1.Unmatched) struct2cell(p1.Unmatched)]',1,[]);
 parse(p2, unmatched_key_value{:});
@@ -343,7 +316,7 @@ parse(p2, unmatched_key_value{:});
 % add p2 results
 results.frequency = p2.Results.frequency;
 results.prn       = p2.Results.prn;
-results.datetime = p2.Results.datetime;
+results.datetime  = p2.Results.datetime;
 
 %% Handle unmatched key-values inputs
 
@@ -362,45 +335,32 @@ end
 
 %% Build the general_parameters struct from user input
 
-% Constant simulation parameters:
-gen_params.c = 299792458;  % Speed of light in vacuum (m/s)
-gen_params.earth_radius = 6378.137e3; % Earth radius (m)
+% organize rx_origin in a structure
+rx_origin.lat = results.rx_origin(1);
+rx_origin.long = results.rx_origin(2);
+rx_origin.height = results.rx_origin(3);
 
-% Parameters that may be overridden by the user:
+% organize drift_vel in a structure
 drift_vel.x = results.drift_vel(1);
 drift_vel.y = results.drift_vel(2);
 drift_vel.z = results.drift_vel(3);
 
-rx_origin.lat = results.rx_origin(1);
-rx_origin.long = results.rx_origin(2);
-rx_origin.height = results.rx_origin(3);
-rx.origin = rx_origin;
-
+% organize rx_vel in a structure
 rx_vel.westeast = results.rx_vel(1);
 rx_vel.southnorth = results.rx_vel(2);
 rx_vel.downup = results.rx_vel(3);
-rx.vel = rx_vel;
 
-% set the rx trajectory
-rx = set_rx_traj(rx, results.sim_time, gen_params.earth_radius);
-
-gen_params.rx              = rx;                         % rx information
-gen_params.prn             = results.prn;                 % satellite PRNs
-gen_params.sim_time        = results.sim_time;     % total simulation time (s)
-gen_params.dt              = results.dt;                  % sampling time (s)
-gen_params.ipp_height      = results.ipp_height;          % IPP height in meters
-gen_params.drift_vel       = drift_vel;                  % ionosphere drift velocity (m/s)
-
-%% get RINEX from user inputs
-
-% if a RINEX file path is not given, download a RINEX file
-if isempty(char(results.rinex_filepath))
-    gen_params.datetime        = results.datetime;            % simulation start date and time
-    gen_params.rinex = download_rinex(gen_params.datetime);
-% else use the RINEX filepath instead
-else
-    gen_params.rinex = rinexread(results.rinex_filepath);
-    % TODO: set `gen_params.datetime` from the RINEX file
-end
+% Parameters that may be overridden by the user:
+parsed_input_args.rx_origin       = rx_origin;                % rx origin
+parsed_input_args.rx_vel          = rx_vel;                   % rx velocity
+parsed_input_args.drift_vel       = drift_vel;                % ionosphere drift velocity (m/s)
+parsed_input_args.prn             = results.prn;              % satellite PRNs
+parsed_input_args.sim_time        = results.sim_time;         % total simulation time (s)
+parsed_input_args.dt              = results.dt;               % sampling time (s)
+parsed_input_args.ipp_height      = results.ipp_height;       % IPP height in meters
+parsed_input_args.rinex_filename  = results.rinex_filename;   % RINEX file path
+parsed_input_args.datetime        = results.datetime;         % datetime
+parsed_input_args.constellation   = results.constellation;    % constellations
+parsed_input_args.frequency       = results.frequency;        % frequencies
 
 end

@@ -2,20 +2,23 @@ function rx = set_rx_traj(rx, sim_time, earth_radius)
 % set_rx_traj
 %
 % Syntax:
-%   gen_params = set_rx_traj(gen_params)
+%   sim_params = set_rx_traj(rx, sim_time, earth_radius)
 %
 % Description:
 %   Computes the receiver tracjectory in LLH (latitude [rad], longitude
 %   [rad], height [m]) for all timestamps. It begins with origin LLH at
 %   the first timestamp. Then, it propagates the receiver trajectory based
 %   on receiver (rx) linear and angular velocities. After the computation,
-%   the rx trajectory is set at `gen_params.rx` as a new field named
+%   the rx trajectory is set at `sim_params.rx` as a new field named
 %   `traj`.
 %
 % Inputs:
-%   rx           - Receiver parameters
-%   sim_time     - Duration for which data is computed (s)
-%   earth_radius - Earth radius (m)
+%   rx                - Receiver parameters
+%   sim_time          - Duration for which data is computed (s)
+%   earth_radius      - Earth radius (m)
+%   rx_origin        - (optional, [rad, rad, m], 3x1 array)
+%                       Receiver position as [latitude; longitude; height].
+%                       Default: [0.3876; 1.9942; 59.6780].
 %
 % Joy
 % Written:  03/28/2017

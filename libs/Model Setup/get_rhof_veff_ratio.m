@@ -1,8 +1,8 @@
-function rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
+function rhof_veff_ratio_L1 = get_rhof_veff_ratio(sim_params)
 % get_rhof_veff_ratio
 %
 % Syntax:
-%   rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
+%   rhof_veff_ratio_L1 = get_rhof_veff_ratio(sim_params)
 %
 % Description:
 %   Computes the mean value of the scaling parameter (rho_F / v_eff) for the L1
@@ -19,7 +19,7 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
 %          rhof_veff_ratio_L1.
 %
 % Inputs:
-%   gen_params - Struct containing the required parameters and settings for
+%   sim_params - Struct containing the required parameters and settings for
 %                trajectory and geometry calculations. Common fields include:
 %       .datetime      : MATLAB date vector [year, month, day, hour, minute, second]
 %       .prn            : Satellite PRN of interest
@@ -64,15 +64,15 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
 %
 % Example:
 %   % Example usage:
-%   gen_params.datetime       = [2023, 01, 10, 12, 00, 00];
-%   gen_params.prn             = 18; % Satellite prn
-%   gen_params.sim_time = 300;             % 5 minutes
-%   gen_params.gps_bands       = [1.57542e9, 1.22760e9, 1.17645e9];
-%   gen_params.c               = 3e8;             % Speed of light
-%   gen_params.ipp_height      = 350e3;           % 350 km
-%   gen_params.rx_vel          = [0, 0, 0];       % Receiver at rest
-%   gen_params.drift_velocity  = [0, 50, 0];         % 50 m/s eastward drift
-%   ratio_L1 = get_rhof_veff_ratio(gen_params);
+%   sim_params.datetime       = [2023, 01, 10, 12, 00, 00];
+%   sim_params.prn             = 18; % Satellite prn
+%   sim_params.sim_time = 300;             % 5 minutes
+%   sim_params.gps_bands       = [1.57542e9, 1.22760e9, 1.17645e9];
+%   sim_params.c               = 3e8;             % Speed of light
+%   sim_params.ipp_height      = 350e3;           % 350 km
+%   sim_params.rx_vel          = [0, 0, 0];       % Receiver at rest
+%   sim_params.drift_velocity  = [0, 50, 0];         % 50 m/s eastward drift
+%   ratio_L1 = get_rhof_veff_ratio(sim_params);
 %
 % Author:
 %   Rodrigo de Lima Florindo
@@ -80,13 +80,13 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
 %   Email: rdlfresearch@gmail.com
     
     %% Extract the ephemeris for the GPS satellites
-    eph = ExtractRINEXeph(gen_params);
+    eph = ExtractRINEXeph(sim_params);
 
     %% Generate 1-second time samples for the propagation geometry calculation
-    [gps_time_sec_start, gps_week, ~, ~] = UT2GPStime(gen_params.datetime);
-    gps_time_sec_end = gps_time_sec_start + gen_params.sim_time - 1;
+    [gps_time_sec_start, gps_week, ~, ~] = UT2GPStime(sim_params.datetime);
+    gps_time_sec_end = gps_time_sec_start + sim_params.sim_time - 1;
     
-    gps_week_in_seconds(1, :) = ones(1, gen_params.sim_time) * gps_week;
+    gps_week_in_seconds(1, :) = ones(1, sim_params.sim_time) * gps_week;
     gps_week_in_seconds(2, :) = gps_time_sec_start : gps_time_sec_end;
     
     % Handle the case when crossing into a new GPS week
@@ -97,12 +97,12 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
     %% Compute the propagation geometry and IPP parameters
     sat_geom = PropGeomCalc( ...
         gps_week_in_seconds, ...
-        gen_params.datetime, ...
+        sim_params.datetime, ...
         eph, ...
         rx_traj_llh, ...
-        gen_params.ipp_height, ...
-        gen_params.rx_vel, ...
-        gen_params.drift_velocity);
+        sim_params.ipp_height, ...
+        sim_params.rx_vel, ...
+        sim_params.drift_velocity);
     
     sat_receiver_range = sat_geom.sat_rnge;
     ipp_range = sat_geom.rngp;
@@ -115,7 +115,7 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(gen_params)
     % The usage of the average ratio follows the approach introduced by "Joy" 
     % in the gnss-scintillation-simulator-2-param repository.
     rhof_veff_ratio_L1 = mean( ...
-        sqrt(effective_ipp_range) ./ (veff * sqrt((2 * pi * gen_params.gps_bands(1)) / gen_params.c)) ...
+        sqrt(effective_ipp_range) ./ (veff * sqrt((2 * pi * sim_params.gps_bands(1)) / sim_params.c)) ...
     );
 
 end

@@ -37,7 +37,7 @@
 %
 % Dependencies:
 % This script relies on the following custom functions from the developed library:
-%   - get_general_parameters
+%   - handle_input_args
 %   - get_irregularity_parameters
 %   - get_rhof_veff_ratio
 %   - freq_extrapolate
@@ -55,7 +55,7 @@ addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
 %% Model Setup
 % Load general simulation parameters and irregularity parameters
-general_params = get_general_parameters();
+general_params = handle_input_args();
 irr_params = get_irregularity_parameters();
 irr_params.strong.U = 4;
 % Compute the ratio needed for extrapolation (for L1)

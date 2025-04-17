@@ -4,7 +4,7 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
 %
 % Syntax:
 %   [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
-%       freq_extrapolate(irr_params, gen_params, rho_oveff_ratio_L1)
+%       freq_extrapolate(irr_params, sim_params, rho_oveff_ratio_L1)
 %
 % Description:
 %   This function extrapolates the irregularity parameters (U, mu0, p1, p2) 
@@ -22,7 +22,7 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
 %       .p1  - Low-frequency spectral index
 %       .p2  - High-frequency spectral index
 %
-%   gen_params  - Struct returned by get_gen_params(), containing 
+%   sim_params  - Struct returned by get_sim_params(), containing 
 %                        the field .gps_bands, a 1x3 vector with the frequencies 
 %                        [L1, L2, L5].
 %
@@ -47,13 +47,13 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
 %   irr_params.p2  = 3.5;
 %
 %   % Get the general parameters (which includes gps_bands for L1, L2, L5)
-%   gen_params = get_gen_params();
+%   sim_params = get_sim_params();
 %
 %   % Known ratio (rho_F / v_eff) at L1
 %   rho_oveff_l1 = 1.0;
 %
 %   % Extrapolate
-%   [extrap_params, rho_vec] = freq_extrapolate(irr_params, gen_params, rho_oveff_l1);
+%   [extrap_params, rho_vec] = freq_extrapolate(irr_params, sim_params, rho_oveff_l1);
 %
 % Reference:
 %   [1] Jiao, Yu, Rino, Charles, Morton, Yu (Jade), Carrano, Charles, 
@@ -68,7 +68,7 @@ function [extrapolated_irr_params, rhof_veff_ratio_vector] = ...
 %   ORCID: https://orcid.org/0000-0003-0412-5583
 %   Email: rdlfresearch@gmail.com
 
-    % Extract frequencies (L1, L2, L5) from gen_params.
+    % Extract frequencies (L1, L2, L5) from sim_params.
     freq_L1 = general_params.gps_bands(1);
     freq_L2 = general_params.gps_bands(2);
     freq_L5 = general_params.gps_bands(3);

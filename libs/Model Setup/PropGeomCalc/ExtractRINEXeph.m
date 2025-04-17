@@ -1,4 +1,4 @@
-function       eph=ExtractRINEXeph(gen_params)
+function       eph=ExtractRINEXeph(sim_params)
 % USAGE:  Extract RINEX ephemeris file from website 
 % https://cddis.nasa.gov/archive/gnss/data/daily/YYYY/DDD/YYn/brdcDDD0.YYn.Z
 % and store the parameters in the eph struct:
@@ -11,12 +11,12 @@ function       eph=ExtractRINEXeph(gen_params)
 %
           
 % Compute the day of year directly
-day_of_year = day(gen_params.datetime, 'dayofyear');
+day_of_year = day(sim_params.datetime, 'dayofyear');
 
-PRN = gen_params.prn;
+PRN = sim_params.prn;
 
 datadir = 'https://cddis.nasa.gov/archive/gnss/data/daily/';
-YYYY = num2str(year(gen_params.datetime));
+YYYY = num2str(year(sim_params.datetime));
 DDD = num2str(day_of_year);
 DDD = sprintf('%03s', DDD); % the format specifier %03s pads DDD with leading zeros to ensure it is at least 3 characters long
 
@@ -54,7 +54,7 @@ else
 end
 
 % truncate the eph data to right after the user input time.
-[GPStime_sec_start,GPSweek,GPSweek_z,leapsec]=UT2GPStime(gen_params.datetime);
+[GPStime_sec_start,GPSweek,GPSweek_z,leapsec]=UT2GPStime(sim_params.datetime);
 
 ind = find(eph(end,:)>GPStime_sec_start,1,'first')-1;
 if isempty(ind)

@@ -1,4 +1,4 @@
-function rinex = download_rinex(dt)
+function rinex = download_rinex(cspsm_root_dir, datetime)
 % download_rinex Returns the RINEX file as a structure.
 %
 % Syntax:)
@@ -9,11 +9,14 @@ function rinex = download_rinex(dt)
 %   Each field is a constellation, and the values is a timetable with 
 %   the values for each ephemerides. This function tries to download the
 %   corresponding RINEX file from https://cddis.nasa.gov/archive/gnss/data/daily.
+%   The downloaded RINEX files are always stored at `cspsm_root_dir/cache`,
+%   where `cspsm_root_dir` is the root directory of `cspsm.m` on you
+%   system.
+%
 % Inputs:
-%   dt               - (string or datetime) Either a string contains the
-%                    RINEX file path, or a datetime, which is used by this
-%                    function to download the correspondent RINEX file from
-%                    CDDIS.
+%   cspsm_root_dir   - TODO:
+%
+%   datetime         - TODO:
 %
 % Notes:
 %   - Downloading RINEX files from CDDIS requires user authentication. The
@@ -27,22 +30,23 @@ function rinex = download_rinex(dt)
 
 
 %% initialization
+% SEE: https://www.ordnancesurvey.co.uk/documents/resources/rinex-file-naming.pdf
+
 cddis_url_prefix = 'https://cddis.nasa.gov/archive/gnss/data/daily/';
 % day of year in the format DDD
-ddd = sprintf('%03s', num2str(day(dt, 'dayofyear')));
+ddd = sprintf('%03s', num2str(day(datetime, 'dayofyear')));
 % data source
 % NOTE: apparently, From 2020 onwards, the unique data source of the RINEX
 % files was the stations. Up to 2018, the unique data source of the RINEX
 % files was the receivers. 2019 was the unique year that had both receivers
 % and stations as data sources.
-% SEE: https://www.ordnancesurvey.co.uk/documents/resources/rinex-file-naming.pdf
-if year(dt) < 2020
+if year(datetime) < 2020
     data_source = 'R'; % receiver
 else
     data_source = 'S'; % station
 end
 % year in the format YYYY
-yyyy = num2str(year(dt));
+yyyy = num2str(year(datetime));
 % hour and minture in the format HH and MM
 % NOTE: all navigation RINEX files are broadcast at 00h00m
 hh = '00';
@@ -62,23 +66,25 @@ filename = ['BRDM00DLR_' data_source '_' yyyy ddd hh mm '_' ...
 % CDDIS URL
 cddis_url = [cddis_url_prefix yyyy '/brdc/' filename '.gz'];
 
+full_filepath = fullfile(cspsm_root_dir, 'cache' , filename);
+
 %% Download RINEX file
-warning(['If you do not believe us, download it ' ...
+disp(['If you do not believe us, download it ' ...
     'manually and rerun with the RINEX file path.']);
 username = input('Write the username: ', 's');
-warning(['You must have wget installed in order to download the ' ...
+disp(['You must have wget installed in order to download the ' ...
     'RINEX file. On Linux and MacOS, it is tipically included. ' ...
-    'On Windows, you will need external tool such as Chocolatey' ...
-    'To have it installed'
+    'On Windows, you will need external tools such as Chocolatey' ...
+    'To have it installed.'
     ])
 password = input('Write the password: ', 's');
 % download
-system(['wget --auth-no-challenge --user=' username ' --password=' password ...
-    ' -O ', filename,'.gz ', cddis_url]);
+% system(['wget --auth-no-challenge --user=' username ' --password=' password ...
+%     ' -O ' full_filepath '.gz ' cddis_url]);
 % extract the .gziped file
-gunzip([filename,'.gz ']);
+gunzip([full_filepath '.gz']);
 % delete the .gziped file
-delete([filename,'.gz ']);
+delete([full_filepath '.gz']);
 % return rinex file
 rinex = rinexread(filename);
 end

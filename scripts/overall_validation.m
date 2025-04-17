@@ -36,7 +36,7 @@
 % Dependencies:
 %
 % This script relies on the following custom functions from the developed library:
-%   - get_general_parameters
+%   - handle_input_args
 %   - get_rhof_veff_ratio
 %   - get_irregularity_parameters
 %   - freq_extrapolate
@@ -61,7 +61,7 @@ addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
 
 %% Model Setup
-general_params = get_general_parameters();
+general_params = handle_input_args();
 rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_params);
 irr_params_set = get_irregularity_parameters();
 
