@@ -72,7 +72,7 @@ seed = 1;
         seed);
 
 %% Plotting functions for validation
-time_vector = 0 : general_params.dt : general_params.simulation_time - general_params.dt;
+time_vector = 0 : general_params.dt : general_params.sim_time - general_params.dt;
 
 amplitude = abs(scint_field.');
 phase = unwrap(angle(scint_field.'));

@@ -1,11 +1,11 @@
-function thermal_noise = get_thermal_noise(simulation_time, sampling_interval, rx_mean_power, C_over_N0_dBHz, B, varargin)
+function thermal_noise = get_thermal_noise(sim_time, sampling_interval, rx_mean_power, C_over_N0_dBHz, B, varargin)
 % get_thermal_noise
 %
 % Generates additive white Gaussian noise (AWGN) to simulate thermal noise 
 % in a receiver based on specified parameters.
 %
 % Syntax:
-%   thermal_noise = get_thermal_noise(simulation_time, sampling_interval, rx_mean_power, ...
+%   thermal_noise = get_thermal_noise(sim_time, sampling_interval, rx_mean_power, ...
 %                                     C_over_N0_dBHz, B, data_type)
 %
 % Description:
@@ -16,7 +16,7 @@ function thermal_noise = get_thermal_noise(simulation_time, sampling_interval, r
 %   and integration time.
 %
 % Inputs:
-%   simulation_time - Total duration of the simulation (seconds).
+%   sim_time - Total duration of the simulation (seconds).
 %   sampling_interval - Integration time (seconds).
 %   rx_mean_power   - Signal power of the received signal (linear scale).
 %   C_over_N0_dBHz  - Carrier-to-noise density ratio (C/N₀) in dB-Hz.
@@ -41,7 +41,7 @@ function thermal_noise = get_thermal_noise(simulation_time, sampling_interval, r
 %
 % Example:
 %   % Generate thermal noise for:
-%   % - simulation_time = 600 seconds
+%   % - sim_time = 600 seconds
 %   % - sampling_interval = 0.01 seconds
 %   % - rx_mean_power = 1 (linear scale)
 %   % - C/N₀ = 40 dB-Hz
@@ -53,23 +53,23 @@ function thermal_noise = get_thermal_noise(simulation_time, sampling_interval, r
 % Email: rdlfresearch@gmail.com
 
     % Validate required inputs
-    validateattributes(simulation_time, {'numeric'}, {'scalar', 'real', 'positive', 'finite', 'nonnan'}, 'get_thermal_noise', 'simulation_time');
+    validateattributes(sim_time, {'numeric'}, {'scalar', 'real', 'positive', 'finite', 'nonnan'}, 'get_thermal_noise', 'sim_time');
     validateattributes(sampling_interval, {'numeric'}, {'scalar', 'real', 'positive', 'finite', 'nonnan'}, 'get_thermal_noise', 'sampling_interval');
     validateattributes(rx_mean_power, {'numeric'}, {'scalar', 'real', 'positive', 'finite', 'nonnan'}, 'get_thermal_noise', 'rx_mean_power');
     validateattributes(B, {'numeric'}, {'scalar', 'real', 'positive', 'finite', 'nonnan'}, 'get_thermal_noise', 'B');
     validateattributes(C_over_N0_dBHz, {'numeric'}, {'scalar', 'real', 'positive', 'finite', 'nonnan'}, 'get_thermal_noise', 'C_over_N0_dBHz');
 
-    if simulation_time < sampling_interval
+    if sim_time < sampling_interval
         error('get_thermal_noise:simulationTimeSmallerThanSamplingInterval', ...
-            'The inputed value of `simulation_time` was %g, which is smaller than the value of the `sampling_interval`, %g', simulation_time, sampling_interval);
+            'The inputed value of `sim_time` was %g, which is smaller than the value of the `sampling_interval`, %g', sim_time, sampling_interval);
     end
 
-    % Check if simulation_time / sampling_interval is an integer
-    num_samples_exact = simulation_time / sampling_interval;
+    % Check if sim_time / sampling_interval is an integer
+    num_samples_exact = sim_time / sampling_interval;
     num_samples_rounded = round(num_samples_exact);
     if abs(num_samples_exact - num_samples_rounded) > eps
         warning('get_thermal_noise:NonIntegerRatioSamples', ...
-            'simulation_time / sampling_interval is not an integer. The number of samples was rounded from %.5g to %d.', ...
+            'sim_time / sampling_interval is not an integer. The number of samples was rounded from %.5g to %d.', ...
             num_samples_exact, num_samples_rounded);
     end
 

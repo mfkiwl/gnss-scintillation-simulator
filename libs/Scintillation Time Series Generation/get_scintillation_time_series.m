@@ -25,7 +25,7 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 %
 % Inputs:
 %   gen_params - Struct containing simulation parameters, including:
-%       .simulation_time : Total simulation time (seconds)
+%       .sim_time : Total simulation time (seconds)
 %       .dt              : Time step (seconds)
 %
 %   irr_params - Struct with irregularity parameters required by 
@@ -45,7 +45,7 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 %
 % Dependencies:
 %   - nicefftnum(sim_time_ratio)
-%       Calculates an FFT size based on the ratio of simulation_time/dt.
+%       Calculates an FFT size based on the ratio of sim_time/dt.
 %   - get_norm_phase_sdf(mu, irr_params)
 %       Computes a normalized phase spectral density function given mu and 
 %       irregularity parameters.
@@ -63,7 +63,7 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 %
 % Example:
 %   % Assuming gen_params, irr_params, and D_mu are already defined or loaded:
-%   gen_params.simulation_time = 60;  % seconds
+%   gen_params.sim_time = 60;  % seconds
 %   gen_params.dt = 0.01;            % time step
 %   irr_params.U   = 1.5;             % turbulence strength
 %   irr_params.mu0 = 0.8;             % break wavenumber
@@ -86,7 +86,7 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
     parse(p, varargin{:});
     data_type = p.Results.data_type;
 
-    nfft = nicefftnum(gen_params.simulation_time / gen_params.dt);
+    nfft = nicefftnum(gen_params.sim_time / gen_params.dt);
     doppler_frequency = (-nfft/2 : nfft/2-1) / (nfft * gen_params.dt); 
     mu = 2 * pi * doppler_frequency * rhof_veff_ratio;
     D_mu = mu(2) - mu(1);

@@ -20,7 +20,7 @@ function new_filename = initialize_hdf5_file(filename, city_names_str_array, att
 %   new_filename - String. The (possibly modified) filename used.
 %
 % Example:
-%   attrs = struct('sim_date', '2014-01-02', 'simulation_time', 300);
+%   attrs = struct('sim_date', '2014-01-02', 'sim_time', 300);
 %   new_filename = initialize_hdf5_file('simulation_results.h5', ["ascension_island", "hong_kong"], attrs);
 %
 % Author:

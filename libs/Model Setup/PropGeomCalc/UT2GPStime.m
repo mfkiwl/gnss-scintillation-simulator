@@ -1,5 +1,5 @@
-function               [GPStime_sec,GPSweek,GPSweek_z,leapsec]=UT2GPStime(UTdate_time_vector)
-%USAGE           [GPStime_sec,GPSweek,GPSweek_z,leapsec]=UT2GPStime(UTdate_time_vector) 
+function               [GPStime_sec,GPSweek,GPSweek_z,leapsec]=UT2GPStime(UTdatetime_vector)
+%USAGE           [GPStime_sec,GPSweek,GPSweek_z,leapsec]=UT2GPStime(UTdatetime_vector) 
 %
 %Modification of Matlab Central script utc2gps
 %   Copyright 2008 Ian M. Howat, ihowat@gmail.com
@@ -8,10 +8,10 @@ function               [GPStime_sec,GPSweek,GPSweek_z,leapsec]=UT2GPStime(UTdate
 %Rino Consulting
 
 sec_day=24*60*60;
-if length(UTdate_time_vector)~=6
-    error('UTdate_time_vector error')
+if length(UTdatetime_vector)~=6
+    error('UTdatetime_vector error')
 end
-daynumber=datenum(UTdate_time_vector);
+daynumber=datenum(UTdatetime_vector);
 GPSepoch=datenum([1980,1,6,0,0,0]);
 GPStime=(daynumber-GPSepoch);
 GPSweek=floor(GPStime/7);

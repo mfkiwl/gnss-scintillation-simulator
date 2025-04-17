@@ -1,8 +1,8 @@
-function ephs = extract_all_rinex_eph(date_time)
+function ephs = extract_all_rinex_eph(datetime)
 % extract_all_rinex_eph
 %
 % Syntax:
-%   eph = extract_all_rinex_eph(date_time)
+%   eph = extract_all_rinex_eph(datetime)
 %
 % Description:
 %   Downloads and extracts the RINEX GPS ephemeris file for a given date,
@@ -10,7 +10,7 @@ function ephs = extract_all_rinex_eph(date_time)
 %   For each PRN, the record valid at the simulation start time is chosen.
 %
 % Inputs:
-%   date_time - A vector [YYYY MM DD hh mm ss] representing the
+%   datetime - A vector [YYYY MM DD hh mm ss] representing the
 %               simulation start time.
 %
 % Outputs:
@@ -21,7 +21,7 @@ function ephs = extract_all_rinex_eph(date_time)
 % Notes:
 %   - The ephemeris file is downloaded from the CDDIS archive if not found.
 %   - Requires external functions: rinexe, UT2GPStime, and the variable
-%     general_parameters with field date_time.
+%     general_parameters with field datetime.
 %   - This function was inspired in the code `extractRINEXeph` available at 
 %     -> https://github.com/cu-sense-lab/gnss-scintillation-simulator/blob/master/matlab/SatelliteOrbitComputationGPS/extractRINEXeph.m
 %
@@ -32,10 +32,10 @@ function ephs = extract_all_rinex_eph(date_time)
 % ORCID: https://orcid.org/0000-0003-0412-5583
 % Email: rdlfresearch@gmail.com
 
-year = date_time(1);
+year = datetime(1);
 
 % Create a datetime object from the year, month, and day.
-dt = datetime(date_time(1), date_time(2), date_time(3));
+dt = datetime(datetime(1), datetime(2), datetime(3));
 
 % Compute day of year.
 day_of_year = day(dt, 'dayofyear');
@@ -74,7 +74,7 @@ end
 unique_prns = unique(eph_all(1, :));
 
 % Convert simulation start time to GPS time.
-[GPStime_sec_start, ~, ~, ~] = UT2GPStime(date_time);
+[GPStime_sec_start, ~, ~, ~] = UT2GPStime(datetime);
 
 % Initialize an empty struct to hold ephemeris records for each PRN.
 ephs = struct();
