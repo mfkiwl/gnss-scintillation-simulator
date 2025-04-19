@@ -45,10 +45,10 @@ function sim_params = get_sim_params(rx_vel, drift_vel, ipp_height)
 %                           .z: TODO
 %
 % Notes:
-%   - Check `handle_input_args()` to see the default values.
+%   - Check `parse_input_args()` to see the default values.
 %   - Note that not all user inputs are simulation parameters. Rather, some
 %   user input args are used just to produce a simulation parameter. That
-%   is why we have `handle_input_args()` and `get_sim_params()` separately.
+%   is why we have `parse_input_args()` and `get_sim_params()` separately.
 %
 
 

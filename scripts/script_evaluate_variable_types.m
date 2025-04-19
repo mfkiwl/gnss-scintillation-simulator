@@ -36,7 +36,7 @@
 %
 % Dependencies:
 % This script relies on the following custom functions from the developed library:
-%   - handle_input_args
+%   - parse_input_args
 %   - get_rhof_veff_ratio
 %   - get_irregularity_parameters
 %   - freq_extrapolate
@@ -53,7 +53,7 @@ addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
 
 %% Model Setup & Time Series Generation (Severe, L1)
-general_params = handle_input_args();
+general_params = parse_input_args();
 rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_params);
 irr_params_set = get_irregularity_parameters();
 [extrapolated_irr_params.strong, rhof_veff_ratio_vector] = ...

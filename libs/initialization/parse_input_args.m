@@ -1,8 +1,8 @@
-function parsed_input_args = handle_input_args(cspsm_root_dir, varargin)
-% handle_input_args Returns a struct with general simulation parameters.
+function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
+% parse_input_args Returns a struct with general simulation parameters.
 %
 % Syntax:
-%   general_parameters = handle_input_args(varargin)
+%   general_parameters = parse_input_args(varargin)
 %
 % Description:
 %   Parses the raw name–value pair arguments provided by the user and
@@ -114,10 +114,10 @@ function parsed_input_args = handle_input_args(cspsm_root_dir, varargin)
 %
 % Example:
 %   % Use default parameters:
-%   params = handle_input_args();
+%   params = parse_input_args();
 %
 %   % Override rx origin, prn, and constellation:
-%   params = handle_input_args('rx_origin', [0; 5; 3], 'constellation', 'gps', 'prn', 'G12')
+%   params = parse_input_args('rx_origin', [0; 5; 3], 'constellation', 'gps', 'prn', 'G12')
 %
 % Author:
 %   Rodrigo de Lima Florindo
@@ -137,16 +137,41 @@ default_is_down_rinex   = false;                                % by default, do
 default_prn             = "";                                   % PRNs. Empty string means that it should be defined interactively
 default_constellation   = "";                                   % Constellations. Empty string means that it should be defined interactively
 default_frequency       = "";                                   % Default frequency. Empty string means that it should be defined interactively
+default_log_lvl         = "DEBUG";                              % Default log level
 default_sim_time        = 300;                                  % total simulation time in seconds
 default_t_samp          = 1;                                    % sampling time in seconds
 default_ipp_height      = 350e3;                                % IPP height in meters
 default_drift_vel       = [0; 125; 0];                          % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
 
-%% Parse the input arguments
+%% Parsing phase 0: resolve the logging before anything else
+
+p0 = inputParser;
+% p.Unmatched will contain all key-values that are not parsed in this step
+p0.KeepUnmatched = true;
+
+% Add log_lvl parameter: must be either a either a nonfractional scalar, or
+% a scalar string or a char array that belongs to {"DEBUG", "INFO", "WARN",
+% "ERROR"}
+addParameter(p0, 'log_lvl',   default_log_lvl, ...
+    @(lvl) ((ischar(lvl) || (isstring(lvl) && isscalar(lvl))) && ...
+    ismember(upper(string(lvl)),["DEBUG", "INFO", "WARN","ERROR"]) || ...
+    (isscalar(lvl) && isnumeric(lvl) && (mod(lvl,1) == 0))) );
+
+% parse it
+parse(p0, varargin{:});
+
+% get log
+log = Logger(p0.Results.log_lvl);
+
+% rebuilt `varargin` without `log_lvl` and its value (if they were passed)
+unmatched_keys = fieldnames(p0.Unmatched);                 % e.g. {'rx_origin';'constellation';…}
+unmatched_vals  = struct2cell(p0.Unmatched);                          % corresponding values
+varargin = reshape([unmatched_keys unmatched_vals]',1,[]); % interleave into 1×(2*M) cell
+
+%% Parse phase 1: parse the other the input arguments
 p = inputParser;
 % p.Unmatched will contain all key-values that are not parsed in this step
 p.KeepUnmatched = true;
-
 % Add download_rinex parameter: must be a logical scalar
 addParameter(p, 'download_rinex',   default_is_down_rinex, ...
     @(x) isscalar(x) && islogical(x));
@@ -174,18 +199,19 @@ addParameter(p, 'constellation', default_constellation, ...
 % add rinex_filename parameter: must be a an empty string or a
 % string containing a valid RINEX file
 addParameter(p, 'rinex_filename', default_rinex_filename, ...
-    @(rinex_filename) validade_rinex_filename(cspsm_root_dir, ...
+    @(rinex_filename) validade_rinex_filename(log, cspsm_root_dir, ...
     p.Results.download_rinex, rinex_filename));
 % Add frequency parameter: valid strings depend on the set constellation
 addParameter(p, 'frequency', default_frequency, ...
-    @(x) validate_frequency(p.Results.constellation, x));
+    @(x) validate_frequency(log, p.Results.constellation, x));
 % Add prn parameter: valid strings depend on the set constellation
 addParameter(p, 'prn',       default_prn, ...
-    @(x) validate_prn(p.Results.constellation, x));
+    @(x) validate_prn(log, p.Results.constellation, x));
 % Add datetime parameter: must be datetime object and `rinex_filename`  must be
 % empty
 addParameter(p, 'datetime',    default_datetime, ...
-    @(x) validate_datetime(p.Results.download_rinex, p.Results.rinex_filename, x));
+    @(x) validate_datetime(log, p.Results.download_rinex, ...
+    p.Results.rinex_filename, x));
 
 % parse it
 parse(p, varargin{:});
@@ -223,7 +249,7 @@ parsed_input_args.drift_vel         = drift_vel;                  % ionosphere d
 parsed_input_args.is_download_rinex = p.Results.download_rinex;   % whether one should download the RINEX file
 parsed_input_args.prn               = p.Results.prn;              % satellite PRNs
 parsed_input_args.sim_time          = p.Results.sim_time;         % total simulation time (s)
-parsed_input_args.t_samp                = p.Results.t_samp;               % sampling time (s)
+parsed_input_args.t_samp            = p.Results.t_samp;           % sampling time (s)
 parsed_input_args.ipp_height        = p.Results.ipp_height;       % IPP height in meters
 parsed_input_args.rinex_filename    = p.Results.rinex_filename;   % RINEX file path
 parsed_input_args.datetime          = p.Results.datetime;         % datetime
@@ -234,14 +260,14 @@ end
 
 % -------------------------------------------------------------------------
 
-function validade_rinex_filename(cspsm_root_dir, ...
+function validade_rinex_filename(log, cspsm_root_dir, ...
     is_down_rinex, rinex_filename)
 if ~ischar(rinex_filename) && ~isstring(rinex_filename)
-    error('rinex_filename must be a char or string');
+    log.error('rinex_filename must be a char or string');
 end
 
 if is_down_rinex
-    error([ ...
+    log.error([ ...
         'You must either set `download_rinex` to true to ' ...
         'download a RINEX file from CDDIS, or provide a ' ...
         'local RINEX file name.'
@@ -254,36 +280,33 @@ catch ME
     switch ME.identifier
         case 'nav_positioning:rinexInternal:FileNotFound'
             % Build your custom text
-            my_note = sprintf(['Failed to read RINEX file "%s".\n' ...
-                'Please check that it exists and is readable.\n' ...
-                'Original error was:\n%s'], ...
-                fullfile(cspsm_root_dir, 'cache', rinex_filename), ...
-                ME.message);           
-            % create a new exception with the same ID but your extended text
-            ME2 = MException(ME.identifier, my_note);
-            % link the original as the cause
-            ME2 = addCause(ME2, ME);
-            % throw it so it surfaces as a user‐level error
-            throwAsCaller(ME2);
+            log.error( ...
+              ME.identifier, ...
+              ['Failed to read RINEX file "%s".\n', ...
+               'Please check that it exists and is readable.\n', ...
+               'Original error was:\n%s'], ...
+              fullfile(cspsm_root_dir, 'cache', rinex_filename), ...
+              ME.message ...
+            );
     end
 end
 
 end
 
-function validate_datetime(is_down_rinex, rinex_filename, datetime)
+function validate_datetime(log, is_down_rinex, rinex_filename, datetime)
 if ~isdatetime(datetime)
-    error('datetime must be a datetime object.');
+    log.error('datetime must be a datetime object.');
 end
 
 if year(datetime) < 2016
-    error([ ...
+    log.error([ ...
         'You must must input a datetime with year 2016' ...
         'or later in order to download a RINEX file v3.04' ...
         ])
 end
 
 if ~is_down_rinex
-    fprintf([ ...
+    log.info([ ...
         'You have passed a datetime but have not set to\n' ...
         'download a RINEX file from CDDIS. In this case, \n' ...
         'only the minute and hour of the datetime will be \n' ...
@@ -295,7 +318,7 @@ if ~is_down_rinex
 end
 end
 
-function validate_prn(constellation, prn)
+function validate_prn(log, constellation, prn)
 % validatePRN Returns true if `prn` is valid for the given constellation.
 %
 %  - If constellation is empty ("" or ''), only an empty PRN is allowed.
@@ -310,24 +333,24 @@ function validate_prn(constellation, prn)
 
 % Must be char or string
 if ~(ischar(prn) || isstring(prn))
-    error('PRN must be a string or char object');
+    log.error('PRN must be a string or char object');
 end
 
 % when constellation is empty, the PRN can only be empty as well
 if isempty(char(constellation)) && ~isempty(char(prn))
-    error('If you have not set a constellation, you cannot set a PRN');
+    log.error('If you have not set a constellation, you cannot set a PRN');
 end
 
 prn = strtrim(char(prn));        % convert to char and trim whitespace
 if numel(prn) < 2
-    error('A valid PRN must contain at least three characters.')
+    log.error('A valid PRN must contain at least three characters.')
 end
 
 prefix = upper(prn(1));          % first letter
 numpart = prn(2:end);            % the digits
 % if the numpart (e.g., 17 in G17) is not a number, return as not valid
 if ~all(isstrprop(numpart,'digit'))
-    error("The two last PRN's characters must be numbers.")
+    log.error("The two last PRN's characters must be numbers.")
 end
 numpart = str2double(numpart);
 
@@ -335,37 +358,37 @@ numpart = str2double(numpart);
 switch lower(char(constellation))
     case 'gps'
         if ~((prefix=='G') && (numpart>=1 && numpart<=32))
-            error('This PRN is not valid for GSP.')
+            log.error('This PRN is not valid for GSP.')
         end
     case 'galileo'
         if ~((prefix=='E') && (numpart>=1 && numpart<=36))
-            error('This PRN is not valid for Galileo.')
+            log.error('This PRN is not valid for Galileo.')
         end
     case 'glonass'
         if ~((prefix=='R') && (numpart>=1 && numpart<=24))
-            error('This PRN is not valid for GLONASS.')
+            log.error('This PRN is not valid for GLONASS.')
         end
     case 'beidou'
         if ~((prefix=='C') && (numpart>=1 && numpart<=37))
-            error('This PRN is not valid for Beidou')
+            log.error('This PRN is not valid for Beidou')
         end
     case 'all'
         if ~( (prefix=='G' && numpart<=32) || ...
               (prefix=='E' && numpart<=36) || ...
               (prefix=='R' && numpart<=24) || ...
               (prefix=='C' && numpart<=37) )
-            error('There is no constellation in which this PRN is valid');
+            log.error('There is no constellation in which this PRN is valid');
         end
 end
 end
 
-function validate_frequency(constellation, freq)
+function validate_frequency(log, constellation, freq)
 % if no constellation, only allow empty freq
 if ~ischar(freq) && ~isstring(freq)
-    error(['You must pass a char, string, or string array ' ...
+    log.error(['You must pass a char, string, or string array ' ...
         'for the desired frequencies.'])
 elseif isempty(constellation) && ~isempty(char(freq))
-    error(['You cannot pass frequencies if you have not ' ...
+    log.error(['You cannot pass frequencies if you have not ' ...
         'defined a contellation'])
 end
 % define valid frequency labels for each GNSS constellation
@@ -390,7 +413,7 @@ end
 
 % Check that freq is a string or character vector and is among the allowed ones
 if ~(any(strcmpi(freq, allowed)))
-    error(['You have passed frequency(ies) that are not valid ' ...
+    log.error(['You have passed frequency(ies) that are not valid ' ...
         'for the considered constellation(s).'])
 end
 end

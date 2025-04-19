@@ -22,8 +22,9 @@ addpath(genpath(fullfile(cspsm_root_dir,'libs')));
 addpath(genpath(fullfile(cspsm_root_dir,'cache')));
 
 %% handle input args
-parsed_input_args = handle_input_args(cspsm_root_dir, varargin{:});
+[parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin{:});
 
+%% get initial simulation parameters
 sim_params = get_sim_params(parsed_input_args.rx_vel, ...
     parsed_input_args.drift_vel, parsed_input_args.ipp_height);
 
