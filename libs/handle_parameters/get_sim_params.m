@@ -1,4 +1,4 @@
-function sim_params = get_sim_params(sim_time, dt, rx_vel, drift_vel, ipp_height)
+function sim_params = get_sim_params(rx_vel, drift_vel, ipp_height)
 % get_sim_params Initialize a struct with general simulation parameters.
 %
 % Syntax:
@@ -55,8 +55,6 @@ function sim_params = get_sim_params(sim_time, dt, rx_vel, drift_vel, ipp_height
 %% Constant simulation parameters:
 sim_params.c = 299792458;            % Speed of light in vacuum (m/s)
 sim_params.earth_radius = 6378.137e3; % Earth radius (m)
-sim_params.default_rinex_filename = 'BRDM00DLR_R_20170020000_01D_MN.rnx';
-sim_params.default_datetime = datetime([2017 01 02 10 00 00]);
 
 %% User-defined or dafaulted parameters
 
@@ -67,14 +65,8 @@ sim_params.drift_vel = drift_vel;
 rx.vel = rx_vel;
 sim_params.rx = rx;
 
-% simulation time
-sim_params.sim_time = sim_time;
-
 % IPP height
 sim_params.ipp_height = ipp_height;
-
-% Sampling time
-sim_params.dt = dt;
 
 end
 

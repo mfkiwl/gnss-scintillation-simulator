@@ -1,4 +1,4 @@
-function rx = set_rx_traj(rx, sim_time, earth_radius)
+function rx = set_rx_traj(rx, origin, t_samp, time_range, earth_radius)
 % set_rx_traj
 %
 % Syntax:
@@ -33,12 +33,16 @@ function rx = set_rx_traj(rx, sim_time, earth_radius)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% Initialize
+time_array = time_range.start:seconds(t_samp):time_range.end;
+sim_duration = seconds(time_range.end - time_range.start);
+
 %% Propagate recever trajectory - height
-traj.height = rx.origin.height + rx.vel.downup * (0:(sim_time-1));
+traj_height = origin.height + rx.vel.downup * (0:t_samp:sim_duration);
 
 %% Propagate recever trajectory - latitude
 % the total radius of the rx trajectory from the center of Earth
-rx_traj_radius = earth_radius + traj.height;
+rx_traj_radius = earth_radius + traj_height;
 
 % NOTE: in general, if you have a point moving in a circle (or roughly
 % circular path) with radius R in metter, the angular velocity w (in
@@ -52,14 +56,22 @@ rx_traj_radius = earth_radius + traj.height;
 rx_northsouth_angv = rx.vel.southnorth./rx_traj_radius;
 
 % propagate receiver pos in latitude
-traj.lat = rx.origin.lat + rx_northsouth_angv .* (0:(sim_time-1));
+traj_lat = origin.lat + rx_northsouth_angv .* (0:(t_samp-1));
 
 %% Propagate recever trajectory - logitude
 
 % angular velocity (rad/s) in the west-east direction
 rx_westeast_angv = rx.vel.westeast./(rx_traj_radius);
 % propagate receiver pos in longitude
-traj.long = rx.origin.long + rx_westeast_angv .* (0:(sim_time-1));
+traj_long = origin.long + rx_westeast_angv .* (0:(t_samp-1));
 
 %% Set rx trajectory in general parameters
+traj = timetable( ...
+    time_array.', ...
+    traj_height.', ...
+    traj_lat.', ...
+    traj_long.', ...
+    'VariableNames', {'Height','Latitude','Longitude'} ...
+);
+
 rx.traj = traj;

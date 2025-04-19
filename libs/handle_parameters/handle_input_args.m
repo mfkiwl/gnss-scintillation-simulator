@@ -1,4 +1,4 @@
-function parsed_input_args = handle_input_args(varargin)
+function parsed_input_args = handle_input_args(cspsm_root_dir, varargin)
 % handle_input_args Returns a struct with general simulation parameters.
 %
 % Syntax:
@@ -19,12 +19,15 @@ function parsed_input_args = handle_input_args(varargin)
 %   'rx_origin'       - (optional, [rad, rad, m], 3x1 array)
 %                       Receiver position as [latitude; longitude; height].
 %                       Default: [0.3876; 1.9942; 59.6780].
+%
 %   'rx_vel'          - (optional, m/s, 3x1 array) Receiver velocity
 %                       as [v1; v2; v3], where:
 %                           v1 = west-east velocity on the earth arc (eastward +),
 %                           v2 = north-south velocity on the earth arc (northward +),
 %                           v3 = up-down velocity (upward +).
 %                       Default: [0; 0; 0].
+%
+%
 %
 %   'rinex_filename' -  (opitional, string) full file path of the RINEX
 %                       file v3.04. If `'rinex_filename'` is `""`, then this
@@ -92,8 +95,8 @@ function parsed_input_args = handle_input_args(varargin)
 %   'sim_time'        - (optional, seconds, scalar) Total simulation time.
 %                       Default: 300
 %
-%   'dt'              - (optional, seconds, scalar) Sampling time.
-%                       Default: 10e-3
+%   't_samp'              - (optional, seconds, scalar) Sampling time.
+%                       Default: 1
 %
 %   'ipp_height'      - (optional, meters, scalar) Ionospheric piercing
 %                       point (IPP) height.
@@ -126,206 +129,69 @@ function parsed_input_args = handle_input_args(varargin)
 %   Email: rubem.engenharia@gmail.com
 
 %% Define default values
-default_rx_origin       = [0.3876; 1.9942; 59.6780];        % [latitude (rad); longitude (rad); height (m)]
-default_rx_vel          = [0; 0; 0];                        % [v1, v2, v3] where: v1 = west-east, v2 = north-south, v3 = up-down velocity
-default_datetime        = NaN;                              % datetime
-default_rinex_filename  = "";                               % RINEX file path. Empty string means that a RINEX file should be downloaded from CDDIS
-default_prn             = "";                               % PRNs. Empty string means that it should be defined interactively
-default_constellation   = "";                               % Constellations. Empty string means that it should be defined interactively
-default_frequency       = "";                               % Default frequency. Empty string means that it should be defined interactively
-default_sim_time        = 300;                              % total simulation time in seconds
-default_dt              = 0.01;                             % sampling time in seconds
-default_ipp_height      = 350e3;                            % IPP height in meters
-default_drift_vel       = [0; 125; 0];                      % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
+default_rx_origin       = [0.3876; 1.9942; 59.6780];            % [latitude (rad); longitude (rad); height (m)]
+default_rx_vel          = [0; 0; 0];                            % [v1, v2, v3] where: v1 = west-east, v2 = north-south, v3 = up-down velocity
+default_datetime        = datetime([2017 01 02 10 00 00]);      % datetime
+default_rinex_filename  = "BRDM00DLR_R_20170020000_01D_MN.rnx"; % RINEX file name.
+default_is_down_rinex   = false;                                % by default, do not download a RINEX file and use either the user-defined or default RINEX file
+default_prn             = "";                                   % PRNs. Empty string means that it should be defined interactively
+default_constellation   = "";                                   % Constellations. Empty string means that it should be defined interactively
+default_frequency       = "";                                   % Default frequency. Empty string means that it should be defined interactively
+default_sim_time        = 300;                                  % total simulation time in seconds
+default_t_samp          = 1;                                    % sampling time in seconds
+default_ipp_height      = 350e3;                                % IPP height in meters
+default_drift_vel       = [0; 125; 0];                          % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
 
-%% Phase 1: parse the independent arg inputs
-    function is_valid = validade_rinex_filename(x)
-        try rinexinfo(x);
-            is_valid = true;
-        catch
-            is_valid = false;
-        end
-    end
+%% Parse the input arguments
+p = inputParser;
+% p.Unmatched will contain all key-values that are not parsed in this step
+p.KeepUnmatched = true;
 
-p1 = inputParser;
-% p1.Unmatched will contain all key-values that are not parsed in this step
-p1.KeepUnmatched = true;
-% add rinex_filename parameter with validation: must be a an empty string or a
-% string containing a valid RINEX file
-addParameter(p1, 'rinex_filename',   default_rinex_filename, ...
-    @(x) (ischar(x)||isstring(x)) && (validade_rinex_filename(x)||isempty(x)));
+% Add download_rinex parameter: must be a logical scalar
+addParameter(p, 'download_rinex',   default_is_down_rinex, ...
+    @(x) isscalar(x) && islogical(x));
 % Add rx_origin parameter: must be a numeric 3-element vector
-addParameter(p1, 'rx_origin',   default_rx_origin, ...
+addParameter(p, 'rx_origin',   default_rx_origin, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
 % Add rx_vel parameter: must be a numeric 3-element vector
-addParameter(p1, 'rx_vel',      default_rx_vel, ...
+addParameter(p, 'rx_vel',      default_rx_vel, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
 % Add sim_time parameter: must be a positive numeric scalar
-addParameter(p1, 'sim_time', default_sim_time, ...
+addParameter(p, 'sim_time', default_sim_time, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
-% Add dt parameter: must be a positive numeric scalar
-addParameter(p1, 'dt',          default_dt, ...
+% Add t_samp parameter: must be a positive numeric scalar
+addParameter(p, 't_samp',          default_t_samp, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
 % Add ipp_height parameter: must be a positive numeric scalar
-addParameter(p1, 'ipp_height',  default_ipp_height, ...
+addParameter(p, 'ipp_height',  default_ipp_height, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
 % Add drift_vel parameter: must be a numeric 3-element vector.
-addParameter(p1, 'drift_vel',   default_drift_vel, ...
+addParameter(p, 'drift_vel',   default_drift_vel, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
 % add constellation parameter: it must be one of the valid strings
-addParameter(p1, 'constellation', default_constellation, ...
+addParameter(p, 'constellation', default_constellation, ...
     @(x) (ischar(x)||isstring(x)) && (isempty(x) || any(strcmpi(x,{'gps','galileo','glonass','beidou','all'}))));
-% parse
-parse(p1, varargin{:});
-% get results
-results = p1.Results;
-
-
-%% Phase 2: validate dependent input args
-    function is_valid = validate_frequency(constellation, freq)
-        % if no constellation, only allow empty freq
-        if isempty(constellation)
-            is_valid = isempty(freq);
-            return;
-        end
-        % define valid frequency labels for each GNSS constellation
-        validFreq.gps     = {'L1', 'L2', 'L5'};
-        validFreq.galileo = {'E1', 'E5a', 'E5b', 'E6'};
-        validFreq.glonass = {'G1', 'G2', 'G3'};
-        validFreq.beidou  = {'B1', 'B2', 'B3'};
-        validFreq.always_valid = {''};
-        % for "all", allow the union of the above
-        validFreq.all     = unique([validFreq.gps, validFreq.galileo, validFreq.glonass, validFreq.beidou, validFreq.always_valid]);
-
-        % convert the constellation value to lower case
-        constellation = lower(char(constellation));
-
-        % get the list of valid frequencies for the given constellation
-        if isfield(validFreq, constellation)
-            allowed = validFreq.(constellation);
-        else
-            allowed = {};
-        end
-
-        % Check that freq is a string or character vector and is among the allowed ones
-        is_valid = (ischar(freq) || isstring(freq)) && any(strcmpi(freq, allowed));
-    end
-
-    function is_valid = validate_prn(constellation, prn)
-        % validatePRN Returns true if `prn` is valid for the given constellation.
-        %
-        %  - If constellation is empty ("" or ''), only an empty PRN is allowed.
-        %  - For 'gps':   PRN must be 'Gxx' where xx ∈ [1,32].
-        %  - For 'galileo': PRN must be 'Exx' where xx ∈ [1,36].
-        %  - For 'glonass': PRN must be 'Rxx' where xx ∈ [1,24].
-        %  - For 'beidou':  PRN must be 'Cxx' where xx ∈ [1,37].
-        %  - For 'all':     PRN may be any of the above.
-        %
-        % Ranges from EU GNSS glossary: GPS 1–32, Galileo 1–36,
-        % GLONASS 1–24, BeiDou 1–37 :contentReference[oaicite:0]{index=0}.
-
-        % Must be char or string
-        if ~(ischar(prn) || isstring(prn))
-            is_valid = false;
-            return;
-        end
-
-        % when constellation is empty, the PRN can only be empty as well
-        if isempty(constellation)
-            is_valid = isempty(prn);
-            return;
-        end
-
-        prn = strtrim(char(prn));        % convert to char and trim whitespace
-        if numel(prn) < 2
-            is_valid = false;
-            return;
-        end
-
-        prefix = upper(prn(1));          % first letter
-        numpart = prn(2:end);            % the digits
-        % if the numpart (e.g., 17 in G17) is not a number, return as not valid
-        if ~all(isstrprop(numpart,'digit'))
-            is_valid = false;
-            return;
-        end
-        numpart = str2double(numpart);
-
-        % Define valid ranges
-        switch lower(char(constellation))
-            case 'gps'
-                is_valid = (prefix=='G') && (numpart>=1 && numpart<=32);
-            case 'galileo'
-                is_valid = (prefix=='E') && (numpart>=1 && numpart<=36);
-            case 'glonass'
-                is_valid = (prefix=='R') && (numpart>=1 && numpart<=24);
-            case 'beidou'
-                is_valid = (prefix=='C') && (numpart>=1 && numpart<=37);
-            case 'all'
-                is_valid = ( (prefix=='G' && numpart<=32) || ...
-                    (prefix=='E' && numpart<=36) || ...
-                    (prefix=='R' && numpart<=24) || ...
-                    (prefix=='C' && numpart<=37) );
-            otherwise
-                is_valid = false;
-        end
-    end
-
-    function is_valid = validate_datetime(rinex_filename, datetime)
-        if ~isdatetime(datetime)
-            is_valid = false;
-            return
-        end
-
-        if year(datetime) < 2016
-            warning([ ...
-                'You must must input a datetime with year 2016' ...
-                'or later in order to download a RINEX file v3.04' ...
-                ])
-            is_valid = false;
-            return
-        end
-
-        if ~isempty(char(rinex_filename))
-            disp([ ...
-                'Since you passed a RINEX file name and a datetime, ' ...
-                'only the minute and hour of the datetime will be ' ...
-                'used. The year, month, and day will be those ' ...
-                'defined in the RINEX file.']);
-        end
-        is_valid = true;
-    end
-
-p2 = inputParser;
-% p2.Unmatched will contain all key-values that are not parsed in this step
-p2.KeepUnmatched = true;
+% add rinex_filename parameter: must be a an empty string or a
+% string containing a valid RINEX file
+addParameter(p, 'rinex_filename', default_rinex_filename, ...
+    @(rinex_filename) validade_rinex_filename(cspsm_root_dir, ...
+    p.Results.download_rinex, rinex_filename));
 % Add frequency parameter: valid strings depend on the set constellation
-addParameter(p2, 'frequency', default_frequency, ...
-    @(x) validate_frequency(p1.Results.constellation, x));
+addParameter(p, 'frequency', default_frequency, ...
+    @(x) validate_frequency(p.Results.constellation, x));
 % Add prn parameter: valid strings depend on the set constellation
-addParameter(p2, 'prn',       default_prn, ...
-    @(x) validate_prn(p1.Results.constellation, x));
+addParameter(p, 'prn',       default_prn, ...
+    @(x) validate_prn(p.Results.constellation, x));
 % Add datetime parameter: must be datetime object and `rinex_filename`  must be
 % empty
-addParameter(p2, 'datetime',    default_datetime, ...
-    @(x) validate_datetime(p1.Results.rinex_filename, x));
-% rebuild the remaining key-value list only from the unmatched pairs in p1
-unmatched_key_value = reshape([fieldnames(p1.Unmatched) struct2cell(p1.Unmatched)]',1,[]);
-parse(p2, unmatched_key_value{:});
+addParameter(p, 'datetime',    default_datetime, ...
+    @(x) validate_datetime(p.Results.download_rinex, p.Results.rinex_filename, x));
 
-% add p2 results
-results.frequency = p2.Results.frequency;
-results.prn       = p2.Results.prn;
-results.datetime  = p2.Results.datetime;
+% parse it
+parse(p, varargin{:});
 
 %% Handle unmatched key-values inputs
-
-% Helper to choose “s” or “” for pluralization
-    function s = plural(n)
-        if n>1, s = 's'; else, s = ''; end
-    end
-
-unknown_keys = fieldnames(p2.Unmatched);
+unknown_keys = fieldnames(p.Unmatched);
 if ~isempty(unknown_keys)
     % Join them into a comma‑separated list
     list = strjoin(unknown_keys, ', ');
@@ -336,31 +202,195 @@ end
 %% Build the general_parameters struct from user input
 
 % organize rx_origin in a structure
-rx_origin.lat = results.rx_origin(1);
-rx_origin.long = results.rx_origin(2);
-rx_origin.height = results.rx_origin(3);
+rx_origin.lat = p.Results.rx_origin(1);
+rx_origin.long = p.Results.rx_origin(2);
+rx_origin.height = p.Results.rx_origin(3);
 
 % organize drift_vel in a structure
-drift_vel.x = results.drift_vel(1);
-drift_vel.y = results.drift_vel(2);
-drift_vel.z = results.drift_vel(3);
+drift_vel.x = p.Results.drift_vel(1);
+drift_vel.y = p.Results.drift_vel(2);
+drift_vel.z = p.Results.drift_vel(3);
 
 % organize rx_vel in a structure
-rx_vel.westeast = results.rx_vel(1);
-rx_vel.southnorth = results.rx_vel(2);
-rx_vel.downup = results.rx_vel(3);
+rx_vel.westeast = p.Results.rx_vel(1);
+rx_vel.southnorth = p.Results.rx_vel(2);
+rx_vel.downup = p.Results.rx_vel(3);
 
 % Parameters that may be overridden by the user:
-parsed_input_args.rx_origin       = rx_origin;                % rx origin
-parsed_input_args.rx_vel          = rx_vel;                   % rx velocity
-parsed_input_args.drift_vel       = drift_vel;                % ionosphere drift velocity (m/s)
-parsed_input_args.prn             = results.prn;              % satellite PRNs
-parsed_input_args.sim_time        = results.sim_time;         % total simulation time (s)
-parsed_input_args.dt              = results.dt;               % sampling time (s)
-parsed_input_args.ipp_height      = results.ipp_height;       % IPP height in meters
-parsed_input_args.rinex_filename  = results.rinex_filename;   % RINEX file path
-parsed_input_args.datetime        = results.datetime;         % datetime
-parsed_input_args.constellation   = results.constellation;    % constellations
-parsed_input_args.frequency       = results.frequency;        % frequencies
+parsed_input_args.rx_origin         = rx_origin;                  % rx origin
+parsed_input_args.rx_vel            = rx_vel;                     % rx velocity
+parsed_input_args.drift_vel         = drift_vel;                  % ionosphere drift velocity (m/s)
+parsed_input_args.is_download_rinex = p.Results.download_rinex;   % whether one should download the RINEX file
+parsed_input_args.prn               = p.Results.prn;              % satellite PRNs
+parsed_input_args.sim_time          = p.Results.sim_time;         % total simulation time (s)
+parsed_input_args.t_samp                = p.Results.t_samp;               % sampling time (s)
+parsed_input_args.ipp_height        = p.Results.ipp_height;       % IPP height in meters
+parsed_input_args.rinex_filename    = p.Results.rinex_filename;   % RINEX file path
+parsed_input_args.datetime          = p.Results.datetime;         % datetime
+parsed_input_args.constellation     = p.Results.constellation;    % constellations
+parsed_input_args.frequency         = p.Results.frequency;        % frequencies
 
+end
+
+% -------------------------------------------------------------------------
+
+function validade_rinex_filename(cspsm_root_dir, ...
+    is_down_rinex, rinex_filename)
+if ~ischar(rinex_filename) && ~isstring(rinex_filename)
+    error('rinex_filename must be a char or string');
+end
+
+if is_down_rinex
+    error([ ...
+        'You must either set `download_rinex` to true to ' ...
+        'download a RINEX file from CDDIS, or provide a ' ...
+        'local RINEX file name.'
+        ]);
+end
+
+try
+    rinexinfo(fullfile(cspsm_root_dir, 'cache', rinex_filename));
+catch ME
+    switch ME.identifier
+        case 'nav_positioning:rinexInternal:FileNotFound'
+            % Build your custom text
+            my_note = sprintf(['Failed to read RINEX file "%s".\n' ...
+                'Please check that it exists and is readable.\n' ...
+                'Original error was:\n%s'], ...
+                fullfile(cspsm_root_dir, 'cache', rinex_filename), ...
+                ME.message);           
+            % create a new exception with the same ID but your extended text
+            ME2 = MException(ME.identifier, my_note);
+            % link the original as the cause
+            ME2 = addCause(ME2, ME);
+            % throw it so it surfaces as a user‐level error
+            throwAsCaller(ME2);
+    end
+end
+
+end
+
+function validate_datetime(is_down_rinex, rinex_filename, datetime)
+if ~isdatetime(datetime)
+    error('datetime must be a datetime object.');
+end
+
+if year(datetime) < 2016
+    error([ ...
+        'You must must input a datetime with year 2016' ...
+        'or later in order to download a RINEX file v3.04' ...
+        ])
+end
+
+if ~is_down_rinex
+    fprintf([ ...
+        'You have passed a datetime but have not set to\n' ...
+        'download a RINEX file from CDDIS. In this case, \n' ...
+        'only the minute and hour of the datetime will be \n' ...
+        'used. The year, month, and day will be those \n' ...
+        'defined in %s. \n' ...
+        ' If you intended to use the datetime to download \n' ...
+        'from that year, month, and day, set download_rinex \n'...
+        'to true.\n'], rinex_filename);
+end
+end
+
+function validate_prn(constellation, prn)
+% validatePRN Returns true if `prn` is valid for the given constellation.
+%
+%  - If constellation is empty ("" or ''), only an empty PRN is allowed.
+%  - For 'gps':   PRN must be 'Gxx' where xx ∈ [1,32].
+%  - For 'galileo': PRN must be 'Exx' where xx ∈ [1,36].
+%  - For 'glonass': PRN must be 'Rxx' where xx ∈ [1,24].
+%  - For 'beidou':  PRN must be 'Cxx' where xx ∈ [1,37].
+%  - For 'all':     PRN may be any of the above.
+%
+% Ranges from EU GNSS glossary: GPS 1–32, Galileo 1–36,
+% GLONASS 1–24, BeiDou 1–37 :contentReference[oaicite:0]{index=0}.
+
+% Must be char or string
+if ~(ischar(prn) || isstring(prn))
+    error('PRN must be a string or char object');
+end
+
+% when constellation is empty, the PRN can only be empty as well
+if isempty(char(constellation)) && ~isempty(char(prn))
+    error('If you have not set a constellation, you cannot set a PRN');
+end
+
+prn = strtrim(char(prn));        % convert to char and trim whitespace
+if numel(prn) < 2
+    error('A valid PRN must contain at least three characters.')
+end
+
+prefix = upper(prn(1));          % first letter
+numpart = prn(2:end);            % the digits
+% if the numpart (e.g., 17 in G17) is not a number, return as not valid
+if ~all(isstrprop(numpart,'digit'))
+    error("The two last PRN's characters must be numbers.")
+end
+numpart = str2double(numpart);
+
+% Define valid ranges
+switch lower(char(constellation))
+    case 'gps'
+        if ~((prefix=='G') && (numpart>=1 && numpart<=32))
+            error('This PRN is not valid for GSP.')
+        end
+    case 'galileo'
+        if ~((prefix=='E') && (numpart>=1 && numpart<=36))
+            error('This PRN is not valid for Galileo.')
+        end
+    case 'glonass'
+        if ~((prefix=='R') && (numpart>=1 && numpart<=24))
+            error('This PRN is not valid for GLONASS.')
+        end
+    case 'beidou'
+        if ~((prefix=='C') && (numpart>=1 && numpart<=37))
+            error('This PRN is not valid for Beidou')
+        end
+    case 'all'
+        if ~( (prefix=='G' && numpart<=32) || ...
+              (prefix=='E' && numpart<=36) || ...
+              (prefix=='R' && numpart<=24) || ...
+              (prefix=='C' && numpart<=37) )
+            error('There is no constellation in which this PRN is valid');
+        end
+end
+end
+
+function validate_frequency(constellation, freq)
+% if no constellation, only allow empty freq
+if ~ischar(freq) && ~isstring(freq)
+    error(['You must pass a char, string, or string array ' ...
+        'for the desired frequencies.'])
+elseif isempty(constellation) && ~isempty(char(freq))
+    error(['You cannot pass frequencies if you have not ' ...
+        'defined a contellation'])
+end
+% define valid frequency labels for each GNSS constellation
+validFreq.gps     = {'L1', 'L2', 'L5'};
+validFreq.galileo = {'E1', 'E5a', 'E5b', 'E6'};
+validFreq.glonass = {'G1', 'G2', 'G3'};
+validFreq.beidou  = {'B1', 'B2', 'B3'};
+validFreq.always_valid = {''};
+% for "all", allow the union of the above
+validFreq.all = unique([validFreq.gps, validFreq.galileo, ...
+    validFreq.glonass, validFreq.beidou, validFreq.always_valid]);
+
+% convert the constellation value to lower case
+constellation = lower(char(constellation));
+
+% get the list of valid frequencies for the given constellation
+if isfield(validFreq, constellation)
+    allowed = validFreq.(constellation);
+else
+    allowed = {};
+end
+
+% Check that freq is a string or character vector and is among the allowed ones
+if ~(any(strcmpi(freq, allowed)))
+    error(['You have passed frequency(ies) that are not valid ' ...
+        'for the considered constellation(s).'])
+end
 end
