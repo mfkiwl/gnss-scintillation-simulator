@@ -6,7 +6,7 @@ function rx = set_rx_traj(rx, origin, t_samp, time_range, earth_radius)
 %
 % Description:
 %   Computes the receiver tracjectory in LLH (latitude [rad], longitude
-%   [rad], height [m]) for all timestamps. It begins with origin LLH at
+%   [rad], altitude [m]) for all timestamps. It begins with origin LLH at
 %   the first timestamp. Then, it propagates the receiver trajectory based
 %   on receiver (rx) linear and angular velocities. After the computation,
 %   the rx trajectory is set at `sim_params.rx` as a new field named
@@ -17,7 +17,7 @@ function rx = set_rx_traj(rx, origin, t_samp, time_range, earth_radius)
 %   sim_time          - Duration for which data is computed (s)
 %   earth_radius      - Earth radius (m)
 %   rx_origin        - (optional, [rad, rad, m], 3x1 array)
-%                       Receiver position as [latitude; longitude; height].
+%                       Receiver position as [latitude; longitude; altitude].
 %                       Default: [0.3876; 1.9942; 59.6780].
 %
 % Joy
@@ -37,12 +37,12 @@ function rx = set_rx_traj(rx, origin, t_samp, time_range, earth_radius)
 time_array = time_range.start:seconds(t_samp):time_range.end;
 sim_duration = seconds(time_range.end - time_range.start);
 
-%% Propagate recever trajectory - height
-traj_height = origin.height + rx.vel.downup * (0:t_samp:sim_duration);
+%% Propagate recever trajectory - altitude
+traj_altitude = origin.altitude + rx.vel.downup * (0:t_samp:sim_duration);
 
 %% Propagate recever trajectory - latitude
 % the total radius of the rx trajectory from the center of Earth
-rx_traj_radius = earth_radius + traj_height;
+rx_traj_radius = earth_radius + traj_altitude;
 
 % NOTE: in general, if you have a point moving in a circle (or roughly
 % circular path) with radius R in metter, the angular velocity w (in
@@ -68,7 +68,7 @@ traj_long = origin.long + rx_westeast_angv .* (0:(t_samp-1));
 %% Set rx trajectory in general parameters
 traj = timetable( ...
     time_array.', ...
-    traj_height.', ...
+    traj_altitude.', ...
     traj_lat.', ...
     traj_long.', ...
     'VariableNames', {'Height','Latitude','Longitude'} ...

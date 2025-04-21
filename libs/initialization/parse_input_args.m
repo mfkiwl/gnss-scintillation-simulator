@@ -17,7 +17,7 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
 %
 % Inputs (optional, as name-value pairs):
 %   'rx_origin'       - (optional, [rad, rad, m], 3x1 array)
-%                       Receiver position as [latitude; longitude; height].
+%                       Receiver position as [latitude; longitude; altitude].
 %                       Default: [0.3876; 1.9942; 59.6780].
 %
 %   'rx_vel'          - (optional, m/s, 3x1 array) Receiver velocity
@@ -98,8 +98,8 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
 %   't_samp'              - (optional, seconds, scalar) Sampling time.
 %                       Default: 1
 %
-%   'ipp_height'      - (optional, meters, scalar) Ionospheric piercing
-%                       point (IPP) height.
+%   'ipp_altitude'      - (optional, meters, scalar) Ionospheric piercing
+%                       point (IPP) altitude.
 %                       Default: 350e3
 %
 %   'drift_velocity'  - (optional, m/s, 3x1 array) Ionosphere drift
@@ -129,7 +129,7 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
 %   Email: rubem.engenharia@gmail.com
 
 %% Define default values
-default_rx_origin       = [0.3876; 1.9942; 59.6780];            % [latitude (rad); longitude (rad); height (m)]
+default_rx_origin       = [0.3876; 1.9942; 59.6780];            % [latitude (rad); longitude (rad); altitude (m)]
 default_rx_vel          = [0; 0; 0];                            % [v1, v2, v3] where: v1 = west-east, v2 = north-south, v3 = up-down velocity
 default_datetime        = datetime([2017 01 02 10 00 00]);      % datetime
 default_rinex_filename  = "BRDM00DLR_R_20170020000_01D_MN.rnx"; % RINEX file name.
@@ -140,7 +140,7 @@ default_frequency       = "";                                   % Default freque
 default_log_lvl         = "DEBUG";                              % Default log level
 default_sim_time        = 300;                                  % total simulation time in seconds
 default_t_samp          = 1;                                    % sampling time in seconds
-default_ipp_height      = 350e3;                                % IPP height in meters
+default_ipp_altitude      = 350e3;                                % IPP altitude in meters
 default_drift_vel       = [0; 125; 0];                          % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
 
 %% Parsing phase 0: resolve the logging before anything else
@@ -187,8 +187,8 @@ addParameter(p, 'sim_time', default_sim_time, ...
 % Add t_samp parameter: must be a positive numeric scalar
 addParameter(p, 't_samp',          default_t_samp, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
-% Add ipp_height parameter: must be a positive numeric scalar
-addParameter(p, 'ipp_height',  default_ipp_height, ...
+% Add ipp_altitude parameter: must be a positive numeric scalar
+addParameter(p, 'ipp_altitude',  default_ipp_altitude, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
 % Add drift_vel parameter: must be a numeric 3-element vector.
 addParameter(p, 'drift_vel',   default_drift_vel, ...
@@ -221,7 +221,7 @@ unknown_keys = fieldnames(p.Unmatched);
 if ~isempty(unknown_keys)
     % Join them into a comma‑separated list
     list = strjoin(unknown_keys, ', ');
-    warning('Ignored unknown key%s: %s', ...
+    log.warning('', 'Ignored unknown key%s: %s', ...
         plural(numel(unknown_keys)), list);
 end
 
@@ -230,7 +230,7 @@ end
 % organize rx_origin in a structure
 rx_origin.lat = p.Results.rx_origin(1);
 rx_origin.long = p.Results.rx_origin(2);
-rx_origin.height = p.Results.rx_origin(3);
+rx_origin.altitude = p.Results.rx_origin(3);
 
 % organize drift_vel in a structure
 drift_vel.x = p.Results.drift_vel(1);
@@ -250,7 +250,7 @@ parsed_input_args.is_download_rinex = p.Results.download_rinex;   % whether one 
 parsed_input_args.prn               = p.Results.prn;              % satellite PRNs
 parsed_input_args.sim_time          = p.Results.sim_time;         % total simulation time (s)
 parsed_input_args.t_samp            = p.Results.t_samp;           % sampling time (s)
-parsed_input_args.ipp_height        = p.Results.ipp_height;       % IPP height in meters
+parsed_input_args.ipp_altitude        = p.Results.ipp_altitude;       % IPP altitude in meters
 parsed_input_args.rinex_filename    = p.Results.rinex_filename;   % RINEX file path
 parsed_input_args.datetime          = p.Results.datetime;         % datetime
 parsed_input_args.constellation     = p.Results.constellation;    % constellations
@@ -308,12 +308,10 @@ end
 if ~is_down_rinex
     log.info([ ...
         'You have passed a datetime but have not set to\n' ...
-        'download a RINEX file from CDDIS. In this case, \n' ...
-        'only the minute and hour of the datetime will be \n' ...
-        'used. The year, month, and day will be those \n' ...
-        'defined in %s. \n' ...
-        ' If you intended to use the datetime to download \n' ...
-        'from that year, month, and day, set download_rinex \n'...
+        'download a RINEX file from CDDIS. In this case, only the minute and hour\n' ...
+        'of the datetime will be used. The year, month, and day will be those\n' ...
+        'defined in %s. If you intended to use\n' ...
+        'the datetime to download from that year, month, and day, set download_rinex\n' ...
         'to true.\n'], rinex_filename);
 end
 end

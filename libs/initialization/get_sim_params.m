@@ -1,4 +1,4 @@
-function sim_params = get_sim_params(rx_vel, drift_vel, ipp_height)
+function sim_params = get_sim_params(rx_vel, drift_vel, ipp_altitude)
 % get_sim_params Initialize a struct with general simulation parameters.
 %
 % Syntax:
@@ -16,14 +16,14 @@ function sim_params = get_sim_params(rx_vel, drift_vel, ipp_height)
 %
 % Input
 %   rx_origin         - ([rad, rad, m], 3x1 array)
-%                       Receiver position as [latitude; longitude; height].
+%                       Receiver position as [latitude; longitude; altitude].
 %
 %   sim_time          - (seconds, scalar) Total simulation time.
 %
 %   dt                - (seconds, scalar) Sampling time.
 %
-%   ipp_height        - (meters, scalar) Ionospheric piercing point (IPP)
-%                       height.
+%   ipp_altitude        - (meters, scalar) Ionospheric piercing point (IPP)
+%                       altitude.
 %
 % Output
 %   Constant parameters:
@@ -38,7 +38,7 @@ function sim_params = get_sim_params(rx_vel, drift_vel, ipp_height)
 %                             .downup: linear down-up velocity (m/s, upward +, scalar)
 %       sim_time - (s, scalar) Total simulation time.
 %       dt              - (s, scalar) Sampling time.
-%       ipp_height      - (m, scalar) IPP height.
+%       ipp_altitude      - (m, scalar) IPP altitude.
 %       drift_vel       - (m/s, struct) Ionosphere drift velocity.
 %                           .x: TODO
 %                           .y: TODO
@@ -65,8 +65,8 @@ sim_params.drift_vel = drift_vel;
 rx.vel = rx_vel;
 sim_params.rx = rx;
 
-% IPP height
-sim_params.ipp_height = ipp_height;
+% IPP altitude
+sim_params.ipp_altitude = ipp_altitude;
 
 end
 

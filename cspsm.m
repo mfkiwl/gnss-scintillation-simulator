@@ -6,7 +6,7 @@ function [outputArg1,outputArg2] = cspsm(varargin)
 %   general_parameters = cspsm('rx_origin', value, 'rx_vel', value, ...
 %                           'datetime', value, 'prn', value, ...
 %                           'sim_time', value, 't_samp', value, ...
-%                           'ipp_height', value, 'drift_velocity', value)
+%                           'ipp_altitude', value, 'drift_velocity', value)
 %
 % Description:
 %   This function is the entry point of the compact scintillation phase
@@ -26,7 +26,7 @@ addpath(genpath(fullfile(cspsm_root_dir,'cache')));
 
 %% get initial simulation parameters
 sim_params = get_sim_params(parsed_input_args.rx_vel, ...
-    parsed_input_args.drift_vel, parsed_input_args.ipp_height);
+    parsed_input_args.drift_vel, parsed_input_args.ipp_altitude);
 
 %% get ephemerides
 
@@ -36,7 +36,7 @@ sim_params = get_sim_params(parsed_input_args.rx_vel, ...
 
 % extract the appropriate ephemerides for the user frequency,
 % constellation, PNR, and timedate settings from the RINEX file
-rinex = filter_out_rinex(rinex, ...
+rinex = filter_out_rinex(log, rinex, ...
     parsed_input_args.prn, parsed_input_args.constellation, ...
     parsed_input_args.frequency, time_range);
 

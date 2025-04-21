@@ -63,14 +63,14 @@ classdef Logger < handle
         function info(obj, msg, varargin)
             if obj.lvl <= obj.INFO
                 timestamp = datetime("now");
-                fprintf('[%s] INFO :\n%s\n', timestamp, sprintf(msg, varargin{:}));
+                fprintf('Info\n[%s]: %s\n', timestamp, sprintf(msg, varargin{:}));
             end
         end
         
         function warning(obj, id, msg, varargin)
             if obj.lvl <= obj.WARN
                 timestamp = datetime("now");
-                msg = sprintf('[%s] WARN : %s', timestamp, sprintf(msg, varargin{:}));
+                msg = sprintf('\n[%s]: %s', timestamp, sprintf(msg, varargin{:}));
                 if nargin >= 3 && ~isempty(id)
                     % NOTE: `builtin()` prevents the object from
                     % recursively calling the its method called warning.
