@@ -1,4 +1,4 @@
-function rhof_veff_ratio_L1 = get_rhof_veff_ratio(sim_params)
+function rhof_veff_ratio_L1 = get_rhof_veff_ratio(time_utc, rx_traj_lla, rx_vel_ned, sat_traj_lla, drift_vel)
 % get_rhof_veff_ratio
 %
 % Syntax:
@@ -78,35 +78,24 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(sim_params)
 %   Rodrigo de Lima Florindo
 %   ORCID: https://orcid.org/0000-0003-0412-5583
 %   Email: rdlfresearch@gmail.com
-    
-    %% Extract the ephemeris for the GPS satellites
-    eph = ExtractRINEXeph(sim_params);
 
-    %% Generate 1-second time samples for the propagation geometry calculation
-    [gps_time_sec_start, gps_week, ~, ~] = UT2GPStime(sim_params.datetime);
-    gps_time_sec_end = gps_time_sec_start + sim_params.sim_time - 1;
-    
-    gps_week_in_seconds(1, :) = ones(1, sim_params.sim_time) * gps_week;
-    gps_week_in_seconds(2, :) = gps_time_sec_start : gps_time_sec_end;
-    
-    % Handle the case when crossing into a new GPS week
-    index_new_week = find(gps_week_in_seconds(2, :) >= 604800);
-    gps_week_in_seconds(1, index_new_week) = gps_week_in_seconds(1, index_new_week) + 1;
-    gps_week_in_seconds(2, index_new_week) = gps_week_in_seconds(2, index_new_week) - 604800;
+gps_week_in_seconds = NaN;
+eph = NaN;
 
-    %% Compute the propagation geometry and IPP parameters
-    sat_geom = PropGeomCalc( ...
-        gps_week_in_seconds, ...
-        sim_params.datetime, ...
-        eph, ...
-        rx_traj_llh, ...
-        sim_params.ipp_height, ...
-        sim_params.rx_vel, ...
-        sim_params.drift_velocity);
-    
-    sat_receiver_range = sat_geom.sat_rnge;
-    ipp_range = sat_geom.rngp;
-    veff = sat_geom.veff;
+%% Compute the propagation geometry and IPP parameters
+sat_geom = PropGeomCalc( ...
+    gps_week_in_seconds, ...
+    time_utc, ...
+    eph, ...
+    rx_traj_lla, ...
+    sat_traj_lla, ...
+    sim_params.ipp_height, ...
+    rx_vel_ned, ...
+    drift_vel);
+
+sat_receiver_range = sat_geom.sat_rnge;
+ipp_range = sat_geom.rngp;
+veff = sat_geom.veff;
 
     % Effective IPP range [1, Eq. (13)]
     effective_ipp_range = ipp_range .* (sat_receiver_range - ipp_range) ./ sat_receiver_range;

@@ -1,4 +1,4 @@
-function rinex = filter_out_rinex(log, rinex, prn, constellation, frequency, trange)
+function rinex = filter_out_rinex(log, rinex, prn, constellation, frequency)
 %FILTER_OUT_RINEX Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -46,37 +46,6 @@ end
 
 if ~isempty(char(frequency))
     % TODO: filter out frequencies
-end
-
-%% select the valid ephemeris range for this simulation
-% filter out ephemerides out of the simulation range
-trange = timerange(trange.start, trange.end);
-rinex_fieldnames = fieldnames(rinex);
-for i = numel(rinex_fieldnames)
-    this_fieldname = rinex_fieldnames{i};
-    rinex.(this_fieldname) = rinex.(this_fieldname)(trange,:);
-    if numel(rinex.(this_fieldname)) == 0
-        log.warning(['No %s ephemerides for the simulation range ' ...
-            '[%s, %s].  This constellation was removed ' ...
-            'from RINEX file.'], ...
-            this_fieldname, start_time, end_time);
-        rinex = rmfield(rinex, this_fieldname);
-    else
-        log.info(['For the constellation %s, %d satellite%s will\n' ...
-            'be used, each of them using %d eph%s\n]n'], ...
-            this_fieldname, ...
-            numel(unique(rinex.(this_fieldname).SatelliteID)), ...
-            plural(numel(unique(rinex.(this_fieldname).SatelliteID))), ...
-            numel(unique(rinex.(this_fieldname).Time)), ...
-            plural(numel(unique(rinex.(this_fieldname).Time))));
-    end
-end
-
-if numel(fieldnames(rinex)) == 0
-    log.error(['There are no ephemerides for the considered ' ...
-        'constellation, simulation range, and RINEX file inputs. ' ...
-        'Try to change one of these in order to find a ' ...
-        'combination that provides ephemerides.']);
 end
 
 end

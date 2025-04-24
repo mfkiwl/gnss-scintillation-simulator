@@ -1,4 +1,4 @@
-function        satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,rx_traj_llh,h_intercept,rx_v,varargin)
+function        satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,rx_traj_llh,h_intercept,rx_vel_enu,varargin)
 %USAGE:   satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,rx_traj_llh,h_intercept,rx_v,varargin)
 %
 %INPUTS:
@@ -9,8 +9,8 @@ function        satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,rx_traj_llh,h_in
 %   Drift            = [downward,eastward,southward] drift mps  
 %
 %OUTPUTS:
-%   *************ecf Coordinates**********************************************************
-%   xsat_ecf, vsat_ecf = satellite state vector in ecf coordinates from spg4 (3XN)
+%   *************ecef Coordinates**********************************************************
+%   xsat_ecef, vsat_ecef = satellite state vector in ecef coordinates from spg4 (3XN)
 %   ************GPS Coordinates***********************************************************
 %   sat_llh            = satellite geodetic coordinates (3XN)
 %   ************Station TCS coordinates***************************************************
@@ -30,7 +30,18 @@ function        satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,rx_traj_llh,h_in
 %   sat_utsec          = time (sec)
 %
 %Libraries:   GPS_CoordinateXforms IGRF_Compston 
-
+% References:
+% [1] Jiao, Yu, Dongyang Xu, Charles L. Rino, Yu T. Morton, and Charles S.
+%     Carrano. “A Multifrequency GPS Signal Strong Equatorial Ionospheric
+%     Scintillation Simulator: Algorithm, Performance, and 
+%     Characterization.” IEEE Transactions on Aerospace and Electronic 
+%     Systems 54, no. 4 (August 2018): 1947–65. 
+%     https://doi.org/10.1109/TAES.2018.2805232.
+% [2] Rino, Charles. The Theory of Scintillation with Applications in 
+%     Remote Sensing. John Wiley & Sons, 2011.
+% [3] Vasylyev, Dmytro, Yannick Béniguel, Wilken Volker, Martin Kriegel, 
+%     and Jens Berdermann. “Modeling of Ionospheric Scintillation.” 
+%     Journal of Space Weather and Space Climate 12 (2022): 22.
 %Author:
 %Charles Rino
 %Rino Consulting
@@ -38,107 +49,197 @@ function        satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,rx_traj_llh,h_in
 
 dtr=pi/180;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Initalize drift velocity
 if isempty(varargin)
-    Drift=[0;0;0];
+    drift_vel = [0;0;0];
 else
-    Drift=varargin{1};
+    drift_vel = varargin{1};
 end
 nsamps=length(GPSTime(1,:));
-xsat_ecf=zeros(3,nsamps);
-vsat_ecf=zeros(3,nsamps);
-for nsamp=1:nsamps            %Calculate ecf position & velocity    
-    [ xsat_ecf(:,nsamp), vsat_ecf(:,nsamp)]=satposvel(GPSTime(2,nsamp),eph);  % changed by Joy
-end
-sat_llh=ecf2llhT(xsat_ecf);         %ECF to geodetic (llh)  
-sat_tcs=llh2tcsT(sat_llh,rx_traj_llh);  %llh to tcs at rx_traj_llh
 
-%%%%%%%%%%Truncate to visible segment containing UTC_time%%%%%%%%%%%%%%%%%% 
-nVIS=find(sat_tcs(3,:)>=0);
+%% Get satellite trajectory and velocity in ENU (origin in the receiver)
+%{
+    NOTE:
+    The ENU (east-north-up) local frame is being used to represent the
+    satellite trajectory, where the origin is the receiver.
 
-%%%%%%%%=%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Satellite range elevation azimuth (from North)
-sat_elev=atan2(sat_tcs(3,:),sqrt(sat_tcs(1,:).^2+sat_tcs(2,:).^2));
-sat_rnge=sqrt(sat_tcs(1,:).^2+sat_tcs(2,:).^2+sat_tcs(3,:).^2);
-sat_phi =atan2(sat_tcs(1,:),sat_tcs(2,:));  
+                 Z(upwards)
+                 |    Y(northwards)
+                 |   /
+                 |  /
+                 | /
+                 |/
+          ───────+───────X(eastwards)
+                /|
+               / |
+              /  |
+             /   |
 
-%Satellite velocity & range rate
-%%% Joy %%%
-for ii = 1:size(rx_traj_llh, 2)
-    D=Rotate_ecf2tcs(rx_traj_llh(:,ii));
-    vsat_tcs(:,ii)=D*vsat_ecf(:,ii)-rx_v;
-end
-%%% 
-usat_tcs=sat_tcs./repmat(sat_rnge,3,1);  % unit vector
-sat_rdot=sum(vsat_tcs.*usat_tcs);
+    • X-axis: points to eastwards
+    • Y-axis: points to nothwards
+    • Z-axis: points to upwards
+    • Origin: is the receiver position, which is moving
+%}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% fprintf('Calculating %6.2f km penetration points \n',h_intercept/1000)
-%Intercept point geometry
-% satp_llh   = findIntercept(h_intercept,usat_tcs,sat_rnge,rx_traj_llh);
-satp_llh   = findIntercept_LEO(h_intercept,usat_tcs,sat_rnge,rx_traj_llh);
-satp_tcs = llh2tcsT(satp_llh,rx_traj_llh(:,1));
+sat_traj_ecef=zeros(3,nsamps);
+sat_vel_ecef=zeros(3,nsamps);
 
-%Convert satellite TCS to xyzp (origin is the piercing point)
-xyzp_tcs=llh2tcsT(rx_traj_llh,satp_llh);
-xyzp(1,:)=-xyzp_tcs(3,:);  %Component 1 is -z tcs (Downward)  
-xyzp(2,:)= xyzp_tcs(1,:);  %Component 2 is  x tcs (Eastward)
-xyzp(3,:)=-xyzp_tcs(2,:);  %Component 3 is -y tcs (Southward)
-rngp  =sqrt(xyzp(1,:).^2+xyzp(2,:).^2+xyzp(3,:).^2);
-uk_xyzp  = xyzp./repmat(rngp,3,1);
-%Propagation angles
-thetap=atan2(sqrt(xyzp(2,:).^2+xyzp(3,:).^2),xyzp(1,:));
-phip  =atan2(xyzp(3,:),xyzp(2,:));
-
-vSF=rngp./sat_rnge;  %Satellite velocity scale vector at penetration point
-vSF1=(sat_rnge-rngp)./sat_rnge;  %Receiver velocity scale vector at penetration point
-for nsegs=1:nsamps
-%     D=Rotate_ecf2tcs(satp_llh(:,nsegs));
-    %%% Joy
-    vp(1,:)=(-vsat_tcs(3,:).*vSF)+(-rx_v(3,:).*vSF1);
-    vp(2,:)=(vsat_tcs(1,:).*vSF)+(rx_v(1,:).*vSF1);
-    vp(3,:)=(-vsat_tcs(2,:).*vSF)+(-rx_v(2,:).*vSF1);
-    %%% 
+% Calculate satellite ECEF position & velocity
+for nsamp=1:nsamps
+    [sat_traj_ecef(:,nsamp), sat_vel_ecef(:,nsamp)] = satposvel(GPSTime(2,nsamp),eph);
 end
 
-% fprintf('Calculating Magnetic field at %6.2f km penetration points \n',...
-%          h_intercept/1000)
+% Satellite ECEF to LLH (geodetic)
+sat_traj_llh=ecef2llhT(sat_traj_ecef);
+% Setellite LLH to ENU with receiver position as origin of the TCS frame
+sat_traj_enu_rx = llh2tcsT(sat_traj_llh, rx_traj_llh);
+
+% Convert satellite ECEF velocity to ENU
+sat_vel_enu = zeros(3, size(rx_traj_llh,2));
+for i = 1:size(rx_traj_llh, 2)
+    D = Rotate_ecef2tcs(rx_traj_llh(:,i));
+    sat_vel_enu(:,i) = D*sat_vel_ecef(:,i) - rx_vel_enu;
+end
+
+%% Get receiver-to-satellite parameters (azimuth, elevation, and range)
+
+% elevation angle (θₛₐₜ) -> see Rino eq. (4.69)
+rx2sat_elev = atan2(sat_traj_enu_rx(3,:),sqrt(sat_traj_enu_rx(1,:).^2+sat_traj_enu_rx(2,:).^2));
+% TCS origin to sat range (rₛₐₜ) -> see Rino eq. (4.68)
+rx2sat_range = sqrt(sat_traj_enu_rx(1,:).^2+sat_traj_enu_rx(2,:).^2+sat_traj_enu_rx(3,:).^2);
+% azimuth (ϕₛₐₜ) -> see Rino eq. (4.69)
+rx2sat_azim =atan2(sat_traj_enu_rx(1,:),sat_traj_enu_rx(2,:));
+
+% receiver-to-satellite unit vector in TCS (origin in the receiver)
+u_rx2sat_tcs = sat_traj_enu_rx./repmat(rx2sat_range,3,1);
+
+%% Compute IPP in LLH and receiver trajectory in ENU (origin in the IPP)
+
+% get IPP trajectory in LLH (geodetic)
+ipp_traj_llh = findIntercept_LEO(h_intercept,u_rx2sat_tcs,rx2sat_range,rx_traj_llh);
+
+% get satellite trajectory in ENU (origin is the IPP)
+rx_traj_enu_ipp = llh2tcsT(rx_traj_llh, ipp_traj_llh);
+
+%% Convert satellite, receiver and IPP trajectories and velocities from ENU to DES
+%{
+    NOTE:
+    The DES (down-east-south) local frame is being used to represent the
+    receiver trajectory, where the origin is the IPP.
+
+                 |    
+                 |   /
+                 |  /
+                 | /
+                 |/
+          ───────+───────Y(eastwards)
+                /|
+               / |
+              /  |
+             /   |
+Z(southwards)    X(downwards)
+
+    • X-axis: points to eastwards
+    • Y-axis: points to nothwards
+    • Z-axis: points to upwards
+    • Origin: is the IPP position, which is moving.
+%}
+
+% convert receiver trajectory from ENU to DES
+rx_traj_des_ipp(1,:)=-rx_traj_enu_ipp(3,:);  %Component 1 is -z tcs (Downward)  
+rx_traj_des_ipp(2,:)= rx_traj_enu_ipp(1,:);  %Component 2 is  x tcs (Eastward)
+rx_traj_des_ipp(3,:)=-rx_traj_enu_ipp(2,:);  %Component 3 is -y tcs (Southward)
+
+% convert receiver trajectory from ENU to DES
+rx_vel_des(1,:)=-rx_vel_enu(3,:);  %Component 1 is -z tcs (Downward)  
+rx_vel_des(2,:)= rx_vel_enu(1,:);  %Component 2 is  x tcs (Eastward)
+rx_vel_des(3,:)=-rx_vel_enu(2,:);  %Component 3 is -y tcs (Southward)
+
+% convert satellite trajectory from ENU to DES
+sat_vel_des(1,:)=-sat_vel_enu(3,:);  %Component 1 is -z tcs (Downward)  
+sat_vel_des(2,:)= sat_vel_enu(1,:);  %Component 2 is  x tcs (Eastward)
+sat_vel_des(3,:)=-sat_vel_enu(2,:);  %Component 3 is -y tcs (Southward)
+
+%% Get receiver-to-IPP parameters (range and angles)
+
+% range from the IPP to the receiver
+rp  =sqrt(rx_traj_des_ipp(1,:).^2+rx_traj_des_ipp(2,:).^2+rx_traj_des_ipp(3,:).^2);
+uk_xyzp  = rx_traj_des_ipp./repmat(rp,3,1);
+% Propagation angles
+% NOTE: See figure 2 in [1]
+% ϕ
+ipp2rx_east2south_angle = atan2(sqrt(rx_traj_des_ipp(2,:).^2+rx_traj_des_ipp(3,:).^2),rx_traj_des_ipp(1,:));
+% θ
+ipp2rx_to_down_angle   = atan2(rx_traj_des_ipp(3,:),rx_traj_des_ipp(2,:));
+
+%% satellite signal scan velocity at the IPP
+% Satellite velocity scale vector at penetration point
+sat_vel_scale=rp./rx2sat_range;
+% Receiver velocity scale vector at penetration point
+rx_vel_scale=(rx2sat_range-rp)./rx2sat_range;
+%{ 
+    get IPP scan velocity
+    NOTE: We didn't understand why it is like that
+    SEE: [1] eq. (13) and (14)
+    SEE: Eq. (4.4), (4.41), (4.42) in Rino's book
+%}
+
+ipp_scan_vel(1,:)=(sat_vel_des(1,:).*sat_vel_scale)+(rx_vel_des(1,:).*rx_vel_scale);
+ipp_scan_vel(2,:)=(sat_vel_des(2,:).*sat_vel_scale)+(rx_vel_des(2,:).*rx_vel_scale);
+ipp_scan_vel(3,:)=(sat_vel_des(3,:).*sat_vel_scale)+(rx_vel_enu(3,:).*rx_vel_scale);
+
+%% Get the megnetic field's unit vector in NED
 %Magnetic field at penetration points 
-%Inputs to igrf are deg/km!!
 time=datenum(UT_time(1),UT_time(2),UT_time(3));
-xyzt=zeros(3,nsamps);
-[xyzt(1,:), xyzt(2,:), xyzt(3,:)] =igrf(time,...
-               satp_llh(1,:)/dtr, satp_llh(2,:)/dtr, satp_llh(3,:)/1000);  
+mag_field=zeros(3,nsamps);
 
-%Unit vector along B in xyzp system
-Bmag=sqrt(xyzt(1,:).^2+xyzt(2,:).^2+xyzt(3,:).^2);
-s(1,:)=  xyzt(3,:)./Bmag;    %xyzt(3,:) Dowward
-s(2,:)=  xyzt(2,:)./Bmag;    %xyzt(2,:) East
-s(3,:)= -xyzt(1,:)./Bmag;    %xyzt(1,:) North
-clear xyzt
+% NOTE: igrf() outputs the magnetic field in NED
+[mag_field(1,:), mag_field(2,:), mag_field(3,:)] =igrf(time,...
+               ipp_traj_llh(1,:)/dtr, ipp_traj_llh(2,:)/dtr, ipp_traj_llh(3,:)/1000);  
 
-%s(1,:)=uk_xyzp(1,:);
-%s(2,:)=uk_xyzp(2,:);
-%s(3,:)=uk_xyzp(3,:);
+% Get absolute velue of the magnitic field vector
+mag_field_abs=sqrt(mag_field(1,:).^2+mag_field(2,:).^2+mag_field(3,:).^2);
+% Get magnetic field's unit vector from NED to DES
+u_mag_field(1,:)=  mag_field(3,:)./mag_field_abs; % northward to downward
+u_mag_field(2,:)=  mag_field(2,:)./mag_field_abs; % Eastward to Eastward
+u_mag_field(3,:)= -mag_field(1,:)./mag_field_abs; % Downward to southward
 
-thetaB=atan2(sqrt(s(2,:).^2+s(3,:).^2),s(1,:));
-phiB  =atan2(s(3,:),s(2,:));
-cosBP=abs(dot(uk_xyzp,s));
+%% Get magnetic field's parmeters
 
-%Penetration point velocity= negative of Equation (4.11) "Theory of Scintillation"
-vkyz=[Drift(2)-vp(2,:)+tan(thetap).*cos(phip).*(-Drift(1)+vp(1,:));...
-      Drift(3)-vp(3,:)+tan(thetap).*sin(phip).*(-Drift(1)+vp(1,:))];
-gam_b=0; a=50; b=1;
+thetaB = atan2(sqrt(u_mag_field(2,:).^2+u_mag_field(3,:).^2),u_mag_field(1,:));
+phiB   = atan2(u_mag_field(3,:),u_mag_field(2,:));
+cosBP  = abs(dot(uk_xyzp,u_mag_field));
+
+%% Get the effective scan velocity
+%{
+    SEE: Refer to [2, Appendix A.3]
+    SEE: Refer to [3, Section 4.2]
+%}
+
+% SEE: Refer to [1, Equation 13]
+vky = drift_vel(2)-ipp_scan_vel(2,:)+tan(ipp2rx_east2south_angle).*cos(ipp2rx_to_down_angle).*(-drift_vel(1)+ipp_scan_vel(1,:));
+% SEE: Refer to [1, Equation 14]
+vkz = drift_vel(3)-ipp_scan_vel(3,:)+tan(ipp2rx_east2south_angle).*sin(ipp2rx_to_down_angle).*(-drift_vel(1)+ipp_scan_vel(1,:));
+
+
+% NOTE: (Rodrigo): Unidentified paramater name. Review this later.
+gam_b=0; 
+% Principal axis enlongation
+a=50; 
+% Transverse axis enlongation
+b=1;
 thetaB=thetaB+pi/2;    %Change magnetic angle ref to horizontal.  CLR 2/13/2016
-    [A,B,C]=ABC(thetap,phip,thetaB,phiB,gam_b,a,b);
+    [A,B,C]=ABC(ipp2rx_east2south_angle,ipp2rx_to_down_angle,thetaB,phiB,gam_b,a,b);
 
-veff=sqrt((C.*vkyz(1,:).^2-B.*vkyz(1,:).*vkyz(2,:)+A.*vkyz(2,:).^2)./(A.*C-B.^2/4));
+% SEE: (4.48) in Rino's book
+veff=sqrt((C.*vky.^2-B.*vky.*vkz+A.*vkz.^2)./(A.*C-B.^2/4));
+
 satGEOM_struct=struct('eph',eph,...
     'UT_time',UT_time,'rx_traj_llh',rx_traj_llh',...
-    'h_intercept',h_intercept','a',a,'b',b,'gam_b',gam_b,'Drift',Drift,...
-    'xsat_ecf',xsat_ecf,'vsat_tcs',vsat_tcs,'sat_llh',sat_llh, 'sat_tcs',sat_tcs,...
-    'sat_rnge',sat_rnge, 'sat_rdot',sat_rdot, 'sat_elev',sat_elev, 'sat_phi',sat_phi,...
-    'satp_tcs',satp_tcs, 'satp_llh',satp_llh, 'xyzp',xyzp,'uk_xyzp',uk_xyzp,...
-    'vkyz',vkyz,'rngp',rngp, 'thetap',thetap, 'phip',phip,'veff',veff,'A',A,'B',B,'C',C,...
-    's',s,'thetaB',thetaB,'phiB',phiB,'cosBP',cosBP,'nVIS',nVIS);
+    'h_intercept',h_intercept','a',a,'b',b,'gam_b',gam_b,'Drift',drift_vel,...
+    'xsat_ecef',sat_traj_ecef,'vsat_tcs',sat_vel_enu,'sat_llh',sat_traj_llh, 'sat_tcs',sat_traj_enu_rx,...
+    'rs',rx2sat_range, 'sat_elev',rx2sat_elev, 'sat_phi',rx2sat_azim,...
+    'satp_llh',ipp_traj_llh, 'xyzp',rx_traj_des_ipp,'uk_xyzp',uk_xyzp,...
+    'vkyz',vkyz,'rngp',rp, 'ipp2rx_east2south_angle',ipp2rx_east2south_angle, 'phip',ipp2rx_to_down_angle,'veff',veff,'A',A,'B',B,'C',C,...
+    's',u_mag_field,'thetaB',thetaB,'phiB',phiB,'cosBP',cosBP);
 return

@@ -16,11 +16,11 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
 %   arguments depend on the independent argument values.
 %
 % Inputs (optional, as name-value pairs):
-%   'rx_origin'       - (optional, [rad, rad, m], 3x1 array)
+%   'rx_origin'       - (optional, [deg, deg, m], 1x3 array)
 %                       Receiver position as [latitude; longitude; altitude].
 %                       Default: [0.3876; 1.9942; 59.6780].
 %
-%   'rx_vel'          - (optional, m/s, 3x1 array) Receiver velocity
+%   'rx_vel'          - (optional, m/s, 1x3 array) Receiver velocity
 %                       as [v1; v2; v3], where:
 %                           v1 = west-east velocity on the earth arc (eastward +),
 %                           v2 = north-south velocity on the earth arc (northward +),
@@ -98,11 +98,11 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
 %   't_samp'              - (optional, seconds, scalar) Sampling time.
 %                       Default: 1
 %
-%   'ipp_altitude'      - (optional, meters, scalar) Ionospheric piercing
+%   'ipp_alt'      - (optional, meters, scalar) Ionospheric piercing
 %                       point (IPP) altitude.
 %                       Default: 350e3
 %
-%   'drift_velocity'  - (optional, m/s, 3x1 array) Ionosphere drift
+%   'drift_velocity'  - (optional, m/s, 1x3 array) Ionosphere drift
 %                       velocity as: [vdx, vdy, vdz] where:
 %                         vdx: TODO:
 %                         vdy: TODO:
@@ -129,10 +129,10 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
 %   Email: rubem.engenharia@gmail.com
 
 %% Define default values
-default_rx_origin       = [0.3876; 1.9942; 59.6780];            % [latitude (rad); longitude (rad); altitude (m)]
-default_rx_vel          = [0; 0; 0];                            % [v1, v2, v3] where: v1 = west-east, v2 = north-south, v3 = up-down velocity
-default_datetime        = datetime([2017 01 02 10 00 00]);      % datetime
-default_rinex_filename  = "BRDM00DLR_R_20170020000_01D_MN.rnx"; % RINEX file name.
+default_rx_origin       = [-23.2198 -45.8916  59.6780];         % [latitude (deg); longitude (deg); altitude (m)] -> São José dos Campos
+default_rx_vel          = [0 0 0];                              % [v1, v2, v3] where: v1 = west-east, v2 = north-south, v3 = up-down velocity
+default_datetime        = datetime([2021 06 24 14 00 00]);      % datetime
+default_rinex_filename  = "BRDM00DLR_R_20170500000_01D_MN.rnx"; % RINEX file name.
 default_is_down_rinex   = false;                                % by default, do not download a RINEX file and use either the user-defined or default RINEX file
 default_prn             = "";                                   % PRNs. Empty string means that it should be defined interactively
 default_constellation   = "";                                   % Constellations. Empty string means that it should be defined interactively
@@ -140,8 +140,8 @@ default_frequency       = "";                                   % Default freque
 default_log_lvl         = "DEBUG";                              % Default log level
 default_sim_time        = 300;                                  % total simulation time in seconds
 default_t_samp          = 1;                                    % sampling time in seconds
-default_ipp_altitude      = 350e3;                                % IPP altitude in meters
-default_drift_vel       = [0; 125; 0];                          % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
+default_ipp_alt         = 350e3;                                % IPP altitude in meters
+default_drift_vel       = [0 125 0];                            % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
 
 %% Parsing phase 0: resolve the logging before anything else
 
@@ -187,8 +187,8 @@ addParameter(p, 'sim_time', default_sim_time, ...
 % Add t_samp parameter: must be a positive numeric scalar
 addParameter(p, 't_samp',          default_t_samp, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
-% Add ipp_altitude parameter: must be a positive numeric scalar
-addParameter(p, 'ipp_altitude',  default_ipp_altitude, ...
+% Add ipp_alt parameter: must be a positive numeric scalar
+addParameter(p, 'ipp_alt',  default_ipp_alt, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
 % Add drift_vel parameter: must be a numeric 3-element vector.
 addParameter(p, 'drift_vel',   default_drift_vel, ...
@@ -227,30 +227,15 @@ end
 
 %% Build the general_parameters struct from user input
 
-% organize rx_origin in a structure
-rx_origin.lat = p.Results.rx_origin(1);
-rx_origin.long = p.Results.rx_origin(2);
-rx_origin.altitude = p.Results.rx_origin(3);
-
-% organize drift_vel in a structure
-drift_vel.x = p.Results.drift_vel(1);
-drift_vel.y = p.Results.drift_vel(2);
-drift_vel.z = p.Results.drift_vel(3);
-
-% organize rx_vel in a structure
-rx_vel.westeast = p.Results.rx_vel(1);
-rx_vel.southnorth = p.Results.rx_vel(2);
-rx_vel.downup = p.Results.rx_vel(3);
-
 % Parameters that may be overridden by the user:
-parsed_input_args.rx_origin         = rx_origin;                  % rx origin
-parsed_input_args.rx_vel            = rx_vel;                     % rx velocity
-parsed_input_args.drift_vel         = drift_vel;                  % ionosphere drift velocity (m/s)
+parsed_input_args.rx_origin         = p.Results.rx_origin;        % rx origin
+parsed_input_args.rx_vel            = p.Results.rx_vel;           % rx velocity
+parsed_input_args.drift_vel         = p.Results.drift_vel;        % ionosphere drift velocity (m/s)
 parsed_input_args.is_download_rinex = p.Results.download_rinex;   % whether one should download the RINEX file
 parsed_input_args.prn               = p.Results.prn;              % satellite PRNs
 parsed_input_args.sim_time          = p.Results.sim_time;         % total simulation time (s)
 parsed_input_args.t_samp            = p.Results.t_samp;           % sampling time (s)
-parsed_input_args.ipp_altitude        = p.Results.ipp_altitude;       % IPP altitude in meters
+parsed_input_args.ipp_alt           = p.Results.ipp_alt;          % IPP altitude in meters
 parsed_input_args.rinex_filename    = p.Results.rinex_filename;   % RINEX file path
 parsed_input_args.datetime          = p.Results.datetime;         % datetime
 parsed_input_args.constellation     = p.Results.constellation;    % constellations
@@ -267,7 +252,7 @@ if ~ischar(rinex_filename) && ~isstring(rinex_filename)
 end
 
 if is_down_rinex
-    log.error([ ...
+    log.error('', [ ...
         'You must either set `download_rinex` to true to ' ...
         'download a RINEX file from CDDIS, or provide a ' ...
         'local RINEX file name.'
@@ -299,7 +284,7 @@ if ~isdatetime(datetime)
 end
 
 if year(datetime) < 2016
-    log.error([ ...
+    log.error('', [ ...
         'You must must input a datetime with year 2016' ...
         'or later in order to download a RINEX file v3.04' ...
         ])
@@ -331,12 +316,12 @@ function validate_prn(log, constellation, prn)
 
 % Must be char or string
 if ~(ischar(prn) || isstring(prn))
-    log.error('PRN must be a string or char object');
+    log.error('', 'PRN must be a string or char object.');
 end
 
 % when constellation is empty, the PRN can only be empty as well
 if isempty(char(constellation)) && ~isempty(char(prn))
-    log.error('If you have not set a constellation, you cannot set a PRN');
+    log.error('', 'If you have not set a constellation, you cannot set a PRN.');
 end
 
 prn = strtrim(char(prn));        % convert to char and trim whitespace

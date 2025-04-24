@@ -9,7 +9,11 @@ function  [A,B,C,Sphik,Cphik,tanthk]=ABC(theta_k,phi_k,theta_b,phi_b,gam_b,a,b)
 %    s=[cos(theta_b),sin(theta_b)cos(phi_b),sin(theta_b)sin(phi_b)]
 %    a=principal axis elongation
 %    b=transverse axis elongation
-%
+% 
+% References:
+% [1] Rino, Charles. The Theory of Scintillation with Applications in 
+%     Remote Sensing. John Wiley & Sons, 2011.
+
     if ~a>=1 || ~b>=1
         error('a,b range')
     end
@@ -35,9 +39,15 @@ function  [A,B,C,Sphik,Cphik,tanthk]=ABC(theta_k,phi_k,theta_b,phi_b,gam_b,a,b)
 	Chat13  = c11.*c13+a^2*c21.*c23+b^2*c31.*c33;
 	Chat23  = c12.*c13+a^2*c22.*c23+b^2*c32.*c33;
     
-    tanthk=tan(theta_k); Sphik=sin(phi_k); Cphik=cos(phi_k);
+    tanthk=tan(theta_k); 
+    Sphik=sin(phi_k); 
+    Cphik=cos(phi_k);
+
+    % Refer to [1, Equation A.55]
     A  = Chat22+tanthk.^2.*Cphik.^2.*Chat11+2*tanthk.*Cphik.*Chat12;
+    % Refer to [1, Equation A.56]
 	B  = 2*(Chat23+tanthk.^2.*Sphik.*Cphik.*Chat11...
             +tanthk.*(Chat12.*Sphik+Chat13.*Cphik));
+    % Refer to [1, Equation A.57]
 	C  = Chat33+tanthk.^2.*Sphik.^2.*Chat11+2*tanthk.*Sphik.*Chat13;
 return

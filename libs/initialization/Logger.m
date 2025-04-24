@@ -70,7 +70,7 @@ classdef Logger < handle
         function warning(obj, id, msg, varargin)
             if obj.lvl <= obj.WARN
                 timestamp = datetime("now");
-                msg = sprintf('\n[%s]: %s', timestamp, sprintf(msg, varargin{:}));
+                msg = sprintf('Warn\n[%s]: %s\n', timestamp, sprintf(msg, varargin{:}));
                 if nargin >= 3 && ~isempty(id)
                     % NOTE: `builtin()` prevents the object from
                     % recursively calling the its method called warning.
@@ -85,7 +85,7 @@ classdef Logger < handle
         function error(~, id, msg, varargin)
             %ERROR  Log a fatal error (always fires, regardless of Level)
             timestamp = datetime("now");
-            msg = sprintf('[%s] ERROR:\n%s', timestamp, sprintf(msg, varargin{:}));
+            msg = sprintf('\n[%s] ERROR:\n%s', timestamp, sprintf(msg, varargin{:}));
             if nargin >= 3 && ~isempty(id)
                 builtin('error', id, '%s', msg);
             else
