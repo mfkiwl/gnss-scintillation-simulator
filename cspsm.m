@@ -25,11 +25,10 @@ addpath(genpath(fullfile(cspsm_root_dir,'cache')));
 [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin{:});
 
 %% get initial simulation parameters
-sim_params = get_sim_params(parsed_input_args.rx_vel, ...
-    parsed_input_args.drift_vel, parsed_input_args.ipp_alt);
+sim_params = get_sim_params(parsed_input_args.rx_vel_ned, ...
+    parsed_input_args.drift_vel_ned, parsed_input_args.ipp_alt);
 
 %% get RINEX file
-
 [time_range, rinex] = get_rinex(cspsm_root_dir, ...
     parsed_input_args.is_download_rinex, parsed_input_args.datetime, ...
     parsed_input_args.rinex_filename, parsed_input_args.sim_time);
@@ -70,9 +69,9 @@ ac = access(all_sats, rx);
 los_stas_params = ac.accessIntervals;
 
 % get user-filtered LOS sats IDS (filtered by constellation and SV IDS)
-filtered_los_sats_params = get_filtered_los_sat_params(log, los_stas_params, ...
+[filtered_los_sats_params, sim_params.constellation, sim_params.freqs] = get_filtered_los_sat_params(log, los_stas_params, ...
     parsed_input_args.prn, parsed_input_args.constellation, ...
-    time_range);
+    parsed_input_args.frequency, time_range);
 
 filtered_los_sats = all_sats(ismember(all_sats.Name, filtered_los_sats_params.Source));
 
@@ -81,10 +80,14 @@ filtered_los_sats = all_sats(ismember(all_sats.Name, filtered_los_sats_params.So
 % Receiver LLA (latitude, longitude, altitude)
 [rx_traj_lla, ~, time_utc] = states(rx, 'CoordinateFrame','geographic');
 
+% TODO: get the receiver velocity from `states(rx, ...)` instead of the
+% user inputs
+rx_vel_ned = repmat(sim_params.rx.vel_ned.', 1, numel(time_utc));
+
 for filtered_los_sat = filtered_los_sats
-    sat_traj_lla = states(filtered_los_sat, 'CoordinateFrame','geographic');
+    [sat_traj_lla, sat_vel_ned, ~]= states(filtered_los_sat, 'CoordinateFrame','geographic');
     rhof_veff_ratio = get_rhof_veff_ratio(time_utc, ...
-        rx_traj_lla, sim_params.rx.vel, sat_traj_lla, sim_params.drift_vel);
+        rx_traj_lla, rx_vel_ned, sat_traj_lla, sat_vel_ned, sim_params.drift_vel_ned, sim_params.ipp_altitude);
 end
 
 end

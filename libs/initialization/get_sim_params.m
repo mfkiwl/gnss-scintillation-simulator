@@ -1,4 +1,4 @@
-function sim_params = get_sim_params(rx_vel, drift_vel, ipp_altitude)
+function sim_params = get_sim_params(rx_vel_ned, drift_vel_ned, ipp_altitude)
 % get_sim_params Initialize a struct with general simulation parameters.
 %
 % Syntax:
@@ -58,15 +58,18 @@ sim_params.earth_radius = 6378.137e3; % Earth radius (m)
 
 %% User-defined or dafaulted parameters
 
-% drift velocity
-sim_params.drift_vel = drift_vel;
+%% drift velocity
+sim_params.drift_vel_ned = drift_vel_ned;
 
-% receiver velocity
-rx.vel = rx_vel;
+%% receiver velocity
+% TODO: use the tajectory object as a simulation parameter and use its
+% velocity instead the user input
+rx.vel_ned = rx_vel_ned;
 sim_params.rx = rx;
 
-% IPP altitude
+%% IPP altitude
 sim_params.ipp_altitude = ipp_altitude;
+
 
 end
 

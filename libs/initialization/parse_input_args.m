@@ -20,11 +20,11 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
 %                       Receiver position as [latitude; longitude; altitude].
 %                       Default: [0.3876; 1.9942; 59.6780].
 %
-%   'rx_vel'          - (optional, m/s, 1x3 array) Receiver velocity
-%                       as [v1; v2; v3], where:
-%                           v1 = west-east velocity on the earth arc (eastward +),
-%                           v2 = north-south velocity on the earth arc (northward +),
-%                           v3 = up-down velocity (upward +).
+%   'rx_vel_ned'      - (optional, m/s, 1x3 array) Receiver velocity
+%                       as [v1; v2; v3] in NED (Noth-East-Down), that is:
+%                           v1 = south-north velocity on the earth arc (northward +),
+%                           v2 = west-east velocity on the earth arc (eastward +),
+%                           v3 = up-down velocity (downward +).
 %                       Default: [0; 0; 0].
 %
 %
@@ -73,6 +73,7 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
 %                       `frequency` is set to `""`, then an interactive
 %                       prompt will pop up to guide the available frequency
 %                       section.
+%                       Default: "all"
 %
 %   'prn'            -  (optional, string or string array) Satellite PRN.
 %                       If the user knows the exact satellites availabe for
@@ -102,11 +103,12 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
 %                       point (IPP) altitude.
 %                       Default: 350e3
 %
-%   'drift_velocity'  - (optional, m/s, 1x3 array) Ionosphere drift
-%                       velocity as: [vdx, vdy, vdz] where:
-%                         vdx: TODO:
-%                         vdy: TODO:
-%                         vdy: TODO:
+%   'drift_vel_ned'    - (optional, m/s, 1x3 array) Ionosphere drift
+%                        velocity as [vdx, vdy, vdz] in NED
+%                        (Noth-East-Down), that is:
+%                         vdx: west-east velocity on the earth arc (eastward +),
+%                         vdy: south-north velocity on the earth arc (northward +),
+%                         vdy: up-down velocity (downward +).
 %                       Default: [0; 100; 0].
 %
 % Outputs:
@@ -130,18 +132,18 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin)
 
 %% Define default values
 default_rx_origin       = [-23.2198 -45.8916  59.6780];         % [latitude (deg); longitude (deg); altitude (m)] -> São José dos Campos
-default_rx_vel          = [0 0 0];                              % [v1, v2, v3] where: v1 = west-east, v2 = north-south, v3 = up-down velocity
+default_rx_vel_ned          = [0 0 0];                              % [v1, v2, v3] where: v1 = west-east, v2 = south-north, v3 = up-down velocity
 default_datetime        = datetime([2021 06 24 14 00 00]);      % datetime
 default_rinex_filename  = "BRDM00DLR_R_20170500000_01D_MN.rnx"; % RINEX file name.
 default_is_down_rinex   = false;                                % by default, do not download a RINEX file and use either the user-defined or default RINEX file
 default_prn             = "";                                   % PRNs. Empty string means that it should be defined interactively
 default_constellation   = "";                                   % Constellations. Empty string means that it should be defined interactively
-default_frequency       = "";                                   % Default frequency. Empty string means that it should be defined interactively
+default_frequency       = "all";                                   % Default frequency. Empty string means that it should be defined interactively
 default_log_lvl         = "DEBUG";                              % Default log level
 default_sim_time        = 300;                                  % total simulation time in seconds
 default_t_samp          = 1;                                    % sampling time in seconds
 default_ipp_alt         = 350e3;                                % IPP altitude in meters
-default_drift_vel       = [0 125 0];                            % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
+default_drift_vel_ned       = [0 125 0];                            % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
 
 %% Parsing phase 0: resolve the logging before anything else
 
@@ -179,7 +181,7 @@ addParameter(p, 'download_rinex',   default_is_down_rinex, ...
 addParameter(p, 'rx_origin',   default_rx_origin, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
 % Add rx_vel parameter: must be a numeric 3-element vector
-addParameter(p, 'rx_vel',      default_rx_vel, ...
+addParameter(p, 'rx_vel',      default_rx_vel_ned, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
 % Add sim_time parameter: must be a positive numeric scalar
 addParameter(p, 'sim_time', default_sim_time, ...
@@ -191,7 +193,7 @@ addParameter(p, 't_samp',          default_t_samp, ...
 addParameter(p, 'ipp_alt',  default_ipp_alt, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
 % Add drift_vel parameter: must be a numeric 3-element vector.
-addParameter(p, 'drift_vel',   default_drift_vel, ...
+addParameter(p, 'drift_vel',   default_drift_vel_ned, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
 % add constellation parameter: it must be one of the valid strings
 addParameter(p, 'constellation', default_constellation, ...
@@ -229,8 +231,8 @@ end
 
 % Parameters that may be overridden by the user:
 parsed_input_args.rx_origin         = p.Results.rx_origin;        % rx origin
-parsed_input_args.rx_vel            = p.Results.rx_vel;           % rx velocity
-parsed_input_args.drift_vel         = p.Results.drift_vel;        % ionosphere drift velocity (m/s)
+parsed_input_args.rx_vel_ned            = p.Results.rx_vel;           % rx velocity
+parsed_input_args.drift_vel_ned        = p.Results.drift_vel;        % ionosphere drift velocity (m/s)
 parsed_input_args.is_download_rinex = p.Results.download_rinex;   % whether one should download the RINEX file
 parsed_input_args.prn               = p.Results.prn;              % satellite PRNs
 parsed_input_args.sim_time          = p.Results.sim_time;         % total simulation time (s)
@@ -375,27 +377,26 @@ elseif isempty(constellation) && ~isempty(char(freq))
         'defined a contellation'])
 end
 % define valid frequency labels for each GNSS constellation
-validFreq.gps     = {'L1', 'L2', 'L5'};
-validFreq.galileo = {'E1', 'E5a', 'E5b', 'E6'};
-validFreq.glonass = {'G1', 'G2', 'G3'};
-validFreq.beidou  = {'B1', 'B2', 'B3'};
-validFreq.always_valid = {''};
+valid_freqs.gps     = {'L1', 'L2', 'L5'};
+valid_freqs.galileo = {'E1', 'E5a', 'E5b', 'E6'};
+valid_freqs.glonass = {'G1', 'G2', 'G3'};
+valid_freqs.beidou  = {'B1', 'B2', 'B3'};
 % for "all", allow the union of the above
-validFreq.all = unique([validFreq.gps, validFreq.galileo, ...
-    validFreq.glonass, validFreq.beidou, validFreq.always_valid]);
+valid_freqs.all = unique([valid_freqs.gps, valid_freqs.galileo, ...
+    valid_freqs.glonass, valid_freqs.beidou]);
 
 % convert the constellation value to lower case
 constellation = lower(char(constellation));
 
 % get the list of valid frequencies for the given constellation
-if isfield(validFreq, constellation)
-    allowed = validFreq.(constellation);
+if isfield(valid_freqs, constellation)
+    allowed = valid_freqs.(constellation);
 else
     allowed = {};
 end
 
 % Check that freq is a string or character vector and is among the allowed ones
-if ~(any(strcmpi(freq, allowed)))
+if ~any(strcmpi(freq, allowed)) && ~strcmpi(freq, 'all')
     log.error(['You have passed frequency(ies) that are not valid ' ...
         'for the considered constellation(s).'])
 end
