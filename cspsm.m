@@ -21,11 +21,18 @@ function [outputArg1,outputArg2] = cspsm(varargin)
 addpath(genpath(fullfile(cspsm_root_dir,'libs')));
 addpath(genpath(fullfile(cspsm_root_dir,'cache')));
 
-%% handle input args
-[parsed_input_args, log] = parse_input_args(cspsm_root_dir, varargin{:});
+%% instantiate simulation parameters
+sim_params = get_sim_params();
 
-%% get initial simulation parameters
-sim_params = get_sim_params(parsed_input_args.rx_vel_ned, ...
+%% handle input args
+[parsed_input_args, log] = parse_input_args(cspsm_root_dir, sim_params.cte.all_constellations, varargin{:});
+
+% set basic simulation parameters directly from the input arguments: IPP
+% altitude, drift velocity and receiver parameters
+% TODO: when adjusting the program for dynamic receiver, set rx parameters
+% (trajectory, velocity) directry from the `platform()` instead of the
+% parsed input parameters
+[sim_params.drift_vel_ned, sim_params.rx, sim_params.ipp_altitude] = set_ippalt_vdrift(parsed_input_args.rx_vel_ned, ...
     parsed_input_args.drift_vel_ned, parsed_input_args.ipp_alt);
 
 %% get RINEX file
@@ -65,13 +72,21 @@ rx = platform(sat_scen, rx_traj, 'Receiver');
 
 % get parameters of the satellites in LOS with the receiver
 ac = access(all_sats, rx);
+los_sats_params = ac.accessIntervals;
 
-los_stas_params = ac.accessIntervals;
+% set the simulation parameters' frequencies and constellations based on
+% the LOS satellites' parameters and user input arguments
+[sim_params.constellations, sim_params.freqs, sim_params.svids] = set_constellation_freq_svid( ...
+    log, sim_params.cte.all_constellations, sim_params.cte.all_freqs, ...
+    sim_params.cte.all_ids, ...
+    parsed_input_args.constellations, parsed_input_args.frequencies, ...
+    parsed_input_args.svids, los_sats_params);
 
 % get user-filtered LOS sats IDS (filtered by constellation and SV IDS)
-[filtered_los_sats_params, sim_params.constellation, sim_params.freqs] = get_filtered_los_sat_params(log, los_stas_params, ...
-    parsed_input_args.prn, parsed_input_args.constellation, ...
-    parsed_input_args.frequency, time_range);
+filtered_los_sats_params = get_filtered_los_sat_params(log, ...
+    sim_params.cte.all_constellations, sim_params.svids, ...
+    sim_params.constellations, sim_params.cte.all_ids, ...
+    time_range, los_sats_params);
 
 filtered_los_sats = all_sats(ismember(all_sats.Name, filtered_los_sats_params.Source));
 

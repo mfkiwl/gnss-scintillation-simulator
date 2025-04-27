@@ -79,8 +79,8 @@ disp(['You must have wget installed in order to download the ' ...
     ])
 password = input('Write the password: ', 's');
 % download
-% system(['wget --auth-no-challenge --user=' username ' --password=' password ...
-%     ' -O ' full_filepath '.gz ' cddis_url]);
+system(['wget --auth-no-challenge --user=' username ' --password=' password ...
+        ' -O ' full_filepath '.gz ' cddis_url]);
 % extract the .gziped file
 gunzip([full_filepath '.gz']);
 % delete the .gziped file

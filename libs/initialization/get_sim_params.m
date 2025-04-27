@@ -1,4 +1,4 @@
-function sim_params = get_sim_params(rx_vel_ned, drift_vel_ned, ipp_altitude)
+function sim_params = get_sim_params()
 % get_sim_params Initialize a struct with general simulation parameters.
 %
 % Syntax:
@@ -51,25 +51,40 @@ function sim_params = get_sim_params(rx_vel_ned, drift_vel_ned, ipp_altitude)
 %   is why we have `parse_input_args()` and `get_sim_params()` separately.
 %
 
-
 %% Constant simulation parameters:
-sim_params.c = 299792458;            % Speed of light in vacuum (m/s)
-sim_params.earth_radius = 6378.137e3; % Earth radius (m)
+cte.c = 299792458;            % Speed of light in vacuum (m/s)
+cte.earth_radius = 6378.137e3; % Earth radius (m)
+cte.all_constellations = ["gps","galileo","glonass","beidou"];
+% NOTE: at the moment, "glonass", "beidou" are not valid constellation as
+% they are not implemented in the `satellite()` function
+% SEE: https://www.mathworks.com/help/satcom/ref/satellitescenario.satellite.html
+% TODO: when all global constellations are available, remove this field and
+% sitck with `all_constellations`
+cte.valid_constellations = ["gps","galileo"];
+% all possible constellations and their repectives IDS, shown in
+% `los_sat_params.Source`
+cte.all_ids = ["PRN:","GAL Sat ID:"];
 
-%% User-defined or dafaulted parameters
+% frequency
+% GPS L1 (1575.42e6), L2 (1227.60e6), L5 (1176.45e6) relative to fundamental
+name.gps     = ["L1", "L2", "L5"];
+gps_f0 = 10.23e6; % GPS fundamental frequency
+value.gps     = [154*gps_f0, 120*gps_f0, 115*gps_f0];
+% Galileo E1, E5a, E5b, E6
+name.galileo = ["E1", "E5a", "E5b", "E6"];
+value.galileo = [1575.42e6, 1176.45e6, 1207.14e6, 1278.75e6];
+% GLONASS G1, G2, G3
+name.glonass = ["G1", "G2", "G3"];
+value.glonass = [1602e6, 1246e6, 1202.025e6];
+% BeiDou B1, B2, B3
+value.beidou  = [1561.098e6,1207.14e6, 1268.52e6];
+name.beidou  = ["B1", "B2", "B3"];
 
-%% drift velocity
-sim_params.drift_vel_ned = drift_vel_ned;
+freq.name  = name;
+freq.value = value;
+cte.all_freqs = freq;
 
-%% receiver velocity
-% TODO: use the tajectory object as a simulation parameter and use its
-% velocity instead the user input
-rx.vel_ned = rx_vel_ned;
-sim_params.rx = rx;
-
-%% IPP altitude
-sim_params.ipp_altitude = ipp_altitude;
-
+sim_params.cte = cte;
 
 end
 
