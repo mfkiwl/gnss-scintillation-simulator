@@ -22,7 +22,7 @@ addpath(genpath(fullfile(cspsm_root_dir,'libs')));
 addpath(genpath(fullfile(cspsm_root_dir,'cache')));
 
 %% instantiate simulation parameters
-sim_params = get_sim_params();
+sim_params = get_cte_sim_params();
 
 %% handle input args
 [parsed_input_args, log] = parse_input_args(cspsm_root_dir, sim_params.cte.all_constellations, varargin{:});

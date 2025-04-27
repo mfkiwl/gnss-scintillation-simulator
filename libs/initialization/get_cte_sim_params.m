@@ -1,4 +1,4 @@
-function sim_params = get_sim_params()
+function sim_params = get_cte_sim_params()
 % get_sim_params Initialize a struct with general simulation parameters.
 %
 % Syntax:
@@ -51,9 +51,10 @@ function sim_params = get_sim_params()
 %   is why we have `parse_input_args()` and `get_sim_params()` separately.
 %
 
-%% Constant simulation parameters:
+%% Physical parameters
 cte.c = 299792458;            % Speed of light in vacuum (m/s)
 cte.earth_radius = 6378.137e3; % Earth radius (m)
+%% Contellation parameters
 cte.all_constellations = ["gps","galileo","glonass","beidou"];
 % NOTE: at the moment, "glonass", "beidou" are not valid constellation as
 % they are not implemented in the `satellite()` function
@@ -62,7 +63,7 @@ cte.all_constellations = ["gps","galileo","glonass","beidou"];
 % sitck with `all_constellations`
 cte.valid_constellations = ["gps","galileo"];
 % all possible constellations and their repectives IDS, shown in
-% `los_sat_params.Source`
+% `accessIntervals.Source`
 cte.all_ids = ["PRN:","GAL Sat ID:"];
 
 % frequency
@@ -80,9 +81,11 @@ value.glonass = [1602e6, 1246e6, 1202.025e6];
 value.beidou  = [1561.098e6,1207.14e6, 1268.52e6];
 name.beidou  = ["B1", "B2", "B3"];
 
-freq.name  = name;
-freq.value = value;
-cte.all_freqs = freq;
+all_freqs.name  = name;
+all_freqs.value = value;
+cte.all_freqs = all_freqs;
+
+%% output
 
 sim_params.cte = cte;
 
