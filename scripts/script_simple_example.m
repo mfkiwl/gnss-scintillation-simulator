@@ -29,7 +29,7 @@
 %
 % Dependencies:
 % This script relies on the following custom functions from the developed library:
-%   - get_general_parameters
+%   - parse_input_args
 %   - get_rhof_veff_ratio
 %   - get_irregularity_parameters
 %   - freq_extrapolate
@@ -46,7 +46,7 @@ addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
 
 %% Model Setup
-general_params = get_general_parameters();
+general_params = parse_input_args();
 rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_params);
 irr_params_set = get_irregularity_parameters();
 
@@ -72,7 +72,7 @@ seed = 1;
         seed);
 
 %% Plotting functions for validation
-time_vector = 0 : general_params.dt : general_params.simulation_time - general_params.dt;
+time_vector = 0 : general_params.dt : general_params.sim_time - general_params.dt;
 
 amplitude = abs(scint_field.');
 phase = unwrap(angle(scint_field.'));

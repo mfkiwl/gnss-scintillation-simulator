@@ -1,11 +1,11 @@
-function prn_string_array = get_sats_in_los(ephs, receiver_init_llh, receiver_velocity, date_time, simulation_time, mask_angle_deg)
+function prn_string_array = get_sats_in_los(ephs, receiver_init_llh, receiver_velocity, datetime, sim_time, mask_angle_deg)
 
     % Convert mask angle from degrees to radians.
     mask_angle_rad = mask_angle_deg * pi/180;
     
     % Compute the simulation start and end GPS times (in seconds).
-    [gps_time_sec_start, gps_week, ~, ~] = UT2GPStime(date_time);
-    gps_time_sec_end = gps_time_sec_start + simulation_time - 1;
+    [gps_time_sec_start, gps_week, ~, ~] = UT2GPStime(datetime);
+    gps_time_sec_end = gps_time_sec_start + sim_time - 1;
     
     % Build a 2-row array: first row is the GPS week number, second row is seconds.
     gps_week_in_seconds(1, :) = ones(1, 2) * gps_week;
@@ -23,8 +23,8 @@ function prn_string_array = get_sats_in_los(ephs, receiver_init_llh, receiver_ve
     user_traj_data = struct();
     user_traj_data.rx_pos = receiver_init_llh;
     user_traj_data.rx_vel = receiver_velocity;
-    user_traj_data.simulation_time = simulation_time;
-    rx_traj_llh = get_rx_traj(user_traj_data);
+    user_traj_data.sim_time = sim_time;
+    rx_traj_llh = set_rx_traj(user_traj_data);
 
     % Get the list of satellite PRNs (as a cell array of char).
     prn_list = fieldnames(ephs);

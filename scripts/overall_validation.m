@@ -36,7 +36,7 @@
 % Dependencies:
 %
 % This script relies on the following custom functions from the developed library:
-%   - get_general_parameters
+%   - parse_input_args
 %   - get_rhof_veff_ratio
 %   - get_irregularity_parameters
 %   - freq_extrapolate
@@ -61,7 +61,7 @@ addpath(genpath(fullfile('..','libs')));
 addpath(fullfile('..','cache'));
 
 %% Model Setup
-general_params = get_general_parameters();
+general_params = parse_input_args();
 rhof_veff_ratio_L1 = get_rhof_veff_ratio(general_params);
 irr_params_set = get_irregularity_parameters();
 
@@ -108,10 +108,10 @@ for i = 1:numel(scenarios)
 end
 
 %% Plotting functions for validation
-% Time vector at the using the simulation_time parameter.
+% Time vector at the using the sim_time parameter.
 % Note: The scint_field_struct data have a different size than time_vector,
 % given that its size is estimated using the helping function nicefftnum.m.
-time_vector = 0 : general_params.dt : general_params.simulation_time - general_params.dt;
+time_vector = 0 : general_params.dt : general_params.sim_time - general_params.dt;
 
 plot_all_amp_phase_sdfs(scint_field_struct, extrapolated_irr_params, detrended_phase_realization_struct, doppler_frequency_struct, mu_struct, rhof_veff_ratio_vector);
 plot_all_magnitude_phase_time_series(scint_field_struct, time_vector);

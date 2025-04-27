@@ -1,7 +1,7 @@
 % Plot a polar frame in the cartesian coordinate
 % Borrowed from Dr. Mortion's solution
 function [] = skyPlotFrame()
-% Plot north-south, east-west lines
+% Plot north-south, west-east lines
 axis equal;
 line([-1 1], [0, 0]); % Horizontal center line
 line([0 0], [-1, 1]); % Vertical center line

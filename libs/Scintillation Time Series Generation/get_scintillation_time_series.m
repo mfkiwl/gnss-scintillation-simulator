@@ -1,8 +1,8 @@
-function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,doppler_frequency] = get_scintillation_time_series(gen_params, irr_params, rhof_veff_ratio, seed, varargin)
+function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,doppler_frequency] = get_scintillation_time_series(sim_params, irr_params, rhof_veff_ratio, seed, varargin)
 % get_scintillation_time_series
 %
 % Syntax:
-%   propagated_scint_field = get_scintillation_time_series(gen_params, ...
+%   propagated_scint_field = get_scintillation_time_series(sim_params, ...
 %                                                          irr_params, ...
 %                                                          rhof_veff_ratio, ...
 %                                                          seed)
@@ -24,8 +24,8 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 %      field.
 %
 % Inputs:
-%   gen_params - Struct containing simulation parameters, including:
-%       .simulation_time : Total simulation time (seconds)
+%   sim_params - Struct containing simulation parameters, including:
+%       .sim_time : Total simulation time (seconds)
 %       .dt              : Time step (seconds)
 %
 %   irr_params - Struct with irregularity parameters required by 
@@ -45,7 +45,7 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 %
 % Dependencies:
 %   - nicefftnum(sim_time_ratio)
-%       Calculates an FFT size based on the ratio of simulation_time/dt.
+%       Calculates an FFT size based on the ratio of sim_time/dt.
 %   - get_norm_phase_sdf(mu, irr_params)
 %       Computes a normalized phase spectral density function given mu and 
 %       irregularity parameters.
@@ -62,9 +62,9 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 %     https://github.com/cu-sense-lab/gnss-scintillation-simulator_2-param/blob/master/Libraries/GenScintFieldRealization/GenScintFieldRealization.m
 %
 % Example:
-%   % Assuming gen_params, irr_params, and D_mu are already defined or loaded:
-%   gen_params.simulation_time = 60;  % seconds
-%   gen_params.dt = 0.01;            % time step
+%   % Assuming sim_params, irr_params, and D_mu are already defined or loaded:
+%   sim_params.sim_time = 60;  % seconds
+%   sim_params.dt = 0.01;            % time step
 %   irr_params.U   = 1.5;             % turbulence strength
 %   irr_params.mu0 = 0.8;             % break wavenumber
 %   irr_params.p1  = 2.0;             % spectral index (low freq)
@@ -72,7 +72,7 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 %   ratio         = 0.5;             % example (rho_F / v_eff)
 %   seed_val      = 12345;           % random seed
 %
-%   scint_field = get_scintillation_time_series(gen_params, ...
+%   scint_field = get_scintillation_time_series(sim_params, ...
 %                                               irr_params, ...
 %                                               ratio, ...
 %                                               seed_val);
@@ -86,8 +86,8 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
     parse(p, varargin{:});
     data_type = p.Results.data_type;
 
-    nfft = nicefftnum(gen_params.simulation_time / gen_params.dt);
-    doppler_frequency = (-nfft/2 : nfft/2-1) / (nfft * gen_params.dt); 
+    nfft = nicefftnum(sim_params.sim_time / sim_params.dt);
+    doppler_frequency = (-nfft/2 : nfft/2-1) / (nfft * sim_params.dt); 
     mu = 2 * pi * doppler_frequency * rhof_veff_ratio;
     D_mu = mu(2) - mu(1);
 

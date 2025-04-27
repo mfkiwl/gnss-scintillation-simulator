@@ -9,7 +9,7 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
 %   fields: 'general' and 'specific'. 
 %
 %   general includes:
-%       c, gps_bands, date_time, dt, simulation_time, ipp_height, drift_velocities,
+%       c, gps_bands, datetime, dt, sim_time, ipp_height, drift_velocities,
 %       carrier_to_noise_ratios, and irr_params.
 %
 %   specific includes, for each city:
@@ -17,7 +17,7 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
 %
 % Dependencies:
 %   get_irregularity_parameters, local_extrapolate, dms_str_2_rad,
-%   extract_all_rinex_eph, UT2GPStime, get_sats_in_los, get_rx_traj,
+%   extract_all_rinex_eph, UT2GPStime, get_sats_in_los, set_rx_traj,
 %   PropGeomCalc.
 %
 % Inputs:
@@ -67,10 +67,10 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
     general.gps_bands = [154*10.23e6, 120*10.23e6, 115*10.23e6];  % L1, L2, L5 in Hz
     
     % Double array with the start date in the format [YYYY MM DD hh mm ss].
-    general.date_time = [2014 01 02 10 00 00];  
+    general.datetime = [2014 01 02 10 00 00];  
     % Sampling interval (s).
     general.dt = 0.01;
-    general.simulation_time = 300;
+    general.sim_time = 300;
     % Ionospheric pierce point height (m). NOTE: This is the same as used
     % in the original version of the compact GNSS scintillation simulator [1].
     general.ipp_height = 350000;
@@ -167,16 +167,16 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
         'Velocity',  p.Velocity), receivers_positions_dms, 'UniformOutput', false);
     
     % Extract all GPS ephemeris available in the RINEX navigation file.
-    ephs = extract_all_rinex_eph(general.date_time);
+    ephs = extract_all_rinex_eph(general.datetime);
     
     % Compute the GPS time series (week & seconds) used for the `PropGeomCalc` 
     % function developed by the Colorado Boulder University group.
-    [gps_time_sec_start, gps_week, ~, ~] = UT2GPStime(general.date_time);
-    gps_time_sec_end = gps_time_sec_start + general.simulation_time - 1;
+    [gps_time_sec_start, gps_week, ~, ~] = UT2GPStime(general.datetime);
+    gps_time_sec_end = gps_time_sec_start + general.sim_time - 1;
     
-    gps_week_in_seconds = zeros(2, general.simulation_time);
+    gps_week_in_seconds = zeros(2, general.sim_time);
     % The first row corresponds to the week of the simulation
-    gps_week_in_seconds(1, :) = ones(1, general.simulation_time) * gps_week;
+    gps_week_in_seconds(1, :) = ones(1, general.sim_time) * gps_week;
     % The second row refers to the exact time in seconds of the simulation,
     % computed in reference to the beginning of the current week.
     gps_week_in_seconds(2, :) = gps_time_sec_start : gps_time_sec_end;
@@ -198,20 +198,20 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
         rx_velocity = receivers_positions_rad.(city).Velocity;
         
         % Get the in-line-of-sight GPS satellites (PRNs) for this receiver.
-        prn_string_array = get_sats_in_los(ephs, rx_init_llh, rx_velocity, general.date_time, general.simulation_time, mask_angle_deg);
+        prn_string_array = get_sats_in_los(ephs, rx_init_llh, rx_velocity, general.datetime, general.sim_time, mask_angle_deg);
         
         % Build a struct for propagating the user position using the 
-        % `get_rx_traj` function developed by the Colorado Boulder group.
+        % `set_rx_traj` function developed by the Colorado Boulder group.
         % NOTE: This function computes the time series of the user position
         % in latitude, longitude and height (LLH), based on a initial
         % position and its instantaneous velocity.
         user_traj_data = struct();
         user_traj_data.rx_pos = rx_init_llh.';  % ensure row vector
         user_traj_data.rx_vel = rx_velocity;
-        user_traj_data.simulation_time = general.simulation_time;
+        user_traj_data.sim_time = general.sim_time;
         
         % Generate the receiver trajectory.
-        rx_traj_llh = get_rx_traj(user_traj_data);
+        rx_traj_llh = set_rx_traj(user_traj_data);
         
         % Extract eastward drift velocities (assumed to be in row 2).
         eastward_drift_velocities = general.drift_velocities(2, :);
@@ -235,7 +235,7 @@ function data_set_params = get_dataset_params(drift_velocities_amount, carrier_t
             for drift_idx = 1:size(general.drift_velocities, 2)
                 sat_geom = PropGeomCalc( ...
                     gps_week_in_seconds, ...
-                    general.date_time, ...
+                    general.datetime, ...
                     ephs.(prn_str), ...
                     rx_traj_llh, ...
                     general.ipp_height, ...
