@@ -63,7 +63,7 @@ cte.all_constellations = ["gps","galileo","glonass","beidou"];
 % sitck with `all_constellations`
 cte.valid_constellations = ["gps","galileo"];
 % all possible constellations and their repectives IDS, shown in
-% `accessIntervals.Source`
+% `los_sat_params.Source`
 cte.all_ids = ["PRN:","GAL Sat ID:"];
 
 % frequency

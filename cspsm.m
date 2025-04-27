@@ -92,7 +92,7 @@ filtered_los_sats = all_sats(ismember(all_sats.Name, filtered_los_sats_params.So
 
 %% Phase screen realization for each satellite-receiver propagation geometry and frequency
 
-% Receiver LLA (latitude, longitude, altitude)
+% get receiver LLA (latitude, longitude, altitude) and UTC time
 [rx_traj_lla, ~, time_utc] = states(rx, 'CoordinateFrame','geographic');
 
 % TODO: get the receiver velocity from `states(rx, ...)` instead of the
@@ -100,9 +100,13 @@ filtered_los_sats = all_sats(ismember(all_sats.Name, filtered_los_sats_params.So
 rx_vel_ned = repmat(sim_params.rx.vel_ned.', 1, numel(time_utc));
 
 for filtered_los_sat = filtered_los_sats
+    % set satellite trajectory and velocities
     [sat_traj_lla, sat_vel_ned, ~]= states(filtered_los_sat, 'CoordinateFrame','geographic');
-    rhof_veff_ratio = get_rhof_veff_ratio(time_utc, ...
-        rx_traj_lla, rx_vel_ned, sat_traj_lla, sat_vel_ned, sim_params.drift_vel_ned, sim_params.ipp_altitude);
+    % for all simulation frequencies for this contellation
+    for freq = sim_params.freqs.(filtered_los_sat.OrbitPropagator)
+        rhof_veff_ratio = get_rhof_veff_ratio(time_utc, ...
+        rx_traj_lla, rx_vel_ned, sat_traj_lla, sat_vel_ned, sim_params.drift_vel_ned, sim_params.ipp_altitude, freq, sim_params.cte.c);
+    end
 end
 
 end

@@ -1,4 +1,4 @@
-function rhof_veff_ratio_L1 = get_rhof_veff_ratio(time_utc, rx_traj_lla, rx_vel_ned, sat_traj_lla, sat_vel_ned, drift_vel_ned, ipp_altitude)
+function rhof_veff_ratio_L1 = get_rhof_veff_ratio(time_utc, rx_traj_lla, rx_vel_ned, sat_traj_lla, sat_vel_ned, drift_vel_ned, ipp_altitude, freq, c)
 % get_rhof_veff_ratio
 %
 % Syntax:
@@ -102,7 +102,7 @@ effective_ipp_range = ipp2rx_range .* (rx2sat_range - ipp2rx_range) ./ rx2sat_ra
 % The usage of the average ratio follows the approach introduced by "Joy"
 % in the gnss-scintillation-simulator-2-param repository.
 rhof_veff_ratio_L1 = mean( ...
-    sqrt(effective_ipp_range) ./ (veff * sqrt((2 * pi * sim_params.gps_bands(1)) / sim_params.c)) ...
+    sqrt(effective_ipp_range) ./ (veff * sqrt((2 * pi * freq) / c)) ...
     );
 
 end
