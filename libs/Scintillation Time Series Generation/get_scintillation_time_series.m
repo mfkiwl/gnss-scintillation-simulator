@@ -1,4 +1,5 @@
-function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,doppler_frequency] = get_scintillation_time_series(sim_params, irr_params, rhof_veff_ratio, seed, varargin)
+function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,doppler_frequency] ...
+= get_scintillation_time_series(sim_params, irr_params, rhof_veff_ratio, seed, varargin)
 % get_scintillation_time_series
 %
 % Syntax:

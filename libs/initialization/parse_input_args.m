@@ -144,6 +144,7 @@ default_sim_time        = 300;                                  % total simulati
 default_t_samp          = 1;                                    % sampling time in seconds
 default_ipp_alt         = 350e3;                                % IPP altitude in meters
 default_drift_vel_ned   = [0 125 0];                            % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
+default_severity        = "strong";                             % Ionospheric scintllation severity
 
 %% Parsing phase 0: resolve the logging before anything else
 
@@ -209,11 +210,14 @@ addParameter(p, 'frequency', default_frequencies, ...
 % Add svid parameter: valid strings depend on the set constellation
 addParameter(p, 'svid',       default_svids, ...
     @(x) validate_svid(log, p.Results.constellation, x));
-% Add datetime parameter: must be datetime object and `rinex_filename`  must be
+% Add datetime parameter: must be datetime object and `rinex_filename` must be
 % empty
 addParameter(p, 'datetime',    default_datetime, ...
     @(x) validate_datetime(log, p.Results.download_rinex, ...
     p.Results.rinex_filename, x));
+% Add severity parameter: must be "weak", "moderate", or "strong"
+addParameter(p, 'severity',    default_severity, ...
+    @(x) isscalar(string(x)) && ismember(x, ["weak", "moderate", "strong"]));
 
 % parse it
 parse(p, varargin{:});
@@ -242,6 +246,7 @@ parsed_input_args.rinex_filename      = string(p.Results.rinex_filename);       
 parsed_input_args.datetime            = p.Results.datetime;                     % datetime
 parsed_input_args.constellations      = lower(string(p.Results.constellation)); % constellations
 parsed_input_args.frequencies         = string(p.Results.frequency);            % frequencies
+parsed_input_args.severity            = string(p.Results.severity);            % severity
 
 end
 
