@@ -1,5 +1,5 @@
-function [rho_veff_ratio, U, mu0] = ...
-    freq_extrapolate(spectral_params, rho_veff_ratio_ref, freq_ref, freq)
+function [rho_veff_ratio, extrapolated_spectral_params] = ...
+    freq_extrapolate(spectral_params_ref, rho_veff_ratio_ref, freq_ref, freq)
 % freq_extrapolate
 %
 % Syntax:
@@ -71,18 +71,21 @@ function [rho_veff_ratio, U, mu0] = ...
 %% freq_ref == freq -> No extrapolation
 if freq == freq_ref
     rho_veff_ratio = rho_veff_ratio_ref;
-    U = spectral_params.U_ref;
-    mu0 = spectral_params.mu0_ref;
+
+    extrapolated_spectral_params.p1  = spectral_params_ref.p1;
+    extrapolated_spectral_params.p2  = spectral_params_ref.p2;
+    extrapolated_spectral_params.U   = spectral_params_ref.U_ref;
+    extrapolated_spectral_params.mu0 = spectral_params_ref.mu0_ref;
     % early return
     return
 end
 
 %% Initialization
 % Extract parameters at the reference frequency
-U_ref   = spectral_params.U_ref;
-mu0_ref = spectral_params.mu0_ref;
-p1     = spectral_params.p1;
-p2     = spectral_params.p2;
+U_ref   = spectral_params_ref.U_ref;
+mu0_ref = spectral_params_ref.mu0_ref;
+p1     = spectral_params_ref.p1;
+p2     = spectral_params_ref.p2;
 
 %% Extrapolate the spectral parameter μ₀
 
@@ -112,6 +115,12 @@ else
         'going on and assuming that the extrapolation spet is right.']);
     U = U_ref * (mu0 / mu0_ref)^(p2 - p1) * (freq_ref/freq)^exponent_p1;
 end
+
+%% spectral parameters output
+extrapolated_spectral_params.p1 = spectral_params_ref.p1;
+extrapolated_spectral_params.p2 = spectral_params_ref.p2;
+extrapolated_spectral_params.U = U;
+extrapolated_spectral_params.mu0 = mu0;
 
 %% Extrapolate the scaling parameter
 % Scale the reference ratio (rho_F / v_eff) for L2 and L5 [Eq. (13)].

@@ -1,5 +1,5 @@
-function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,doppler_frequency] ...
-= get_scintillation_time_series(sim_params, irr_params, rhof_veff_ratio, seed, varargin)
+function [propagated_scint_field,norm_phase_psd,detrended_phase_realization,mu,doppler_frequency] ...
+= get_scintillation_time_series(sim_time, t_samp, spectral_params, rhof_veff_ratio, seed, varargin)
 % get_scintillation_time_series
 %
 % Syntax:
@@ -65,13 +65,13 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 % Example:
 %   % Assuming sim_params, irr_params, and D_mu are already defined or loaded:
 %   sim_params.sim_time = 60;  % seconds
-%   sim_params.dt = 0.01;            % time step
+%   t_samp = 0.01;             % time step
 %   irr_params.U   = 1.5;             % turbulence strength
 %   irr_params.mu0 = 0.8;             % break wavenumber
 %   irr_params.p1  = 2.0;             % spectral index (low freq)
 %   irr_params.p2  = 3.5;             % spectral index (high freq)
-%   ratio         = 0.5;             % example (rho_F / v_eff)
-%   seed_val      = 12345;           % random seed
+%   ratio         = 0.5;              % example (rho_F / v_eff)
+%   seed_val      = 12345;            % random seed
 %
 %   scint_field = get_scintillation_time_series(sim_params, ...
 %                                               irr_params, ...
@@ -82,23 +82,25 @@ function [propagated_scint_field,norm_phase_sdf,detrended_phase_realization,mu,d
 % ORCID: https://orcid.org/0000-0003-0412-5583
 % Email: rdlfresearch@gmail.com
 
-    p = inputParser;
-    addParameter(p, 'data_type', 'double', @(x) ischar(x) || isstring(x));
-    parse(p, varargin{:});
-    data_type = p.Results.data_type;
+% FIXME: This varargin should be removed as it seems not necessary anymore    
+p = inputParser;
+addParameter(p, 'data_type', 'double', @(x) ischar(x) || isstring(x));
+parse(p, varargin{:});
+data_type = p.Results.data_type;
 
-    nfft = nicefftnum(sim_params.sim_time / sim_params.dt);
-    doppler_frequency = (-nfft/2 : nfft/2-1) / (nfft * sim_params.dt); 
-    mu = 2 * pi * doppler_frequency * rhof_veff_ratio;
-    D_mu = mu(2) - mu(1);
+nfft = nicefftnum(sim_time / t_samp);
+doppler_frequency = (-nfft/2 : nfft/2-1) / (nfft * t_samp);
+% normalized frequency axis
+% TODO: add a SEE: codetag with a ref
+mu = 2 * pi * doppler_frequency * rhof_veff_ratio;
+D_mu = mu(2) - mu(1);
 
-    % Obtain the normalized phase spectral density function.
-    norm_phase_sdf = get_norm_phase_sdf(mu, irr_params);
+% Obtain the normalized phase spectral density function.
+norm_phase_psd = get_norm_phase_sdf(mu, spectral_params);
 
-    % Generate the random phase realization (note: 'D_mu' must be defined externally).
-    detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_mu, nfft, seed, data_type);
+% Generate the random phase realization (note: 'D_mu' must be defined externally).
+detrended_phase_realization = get_phase_realization(norm_phase_psd, D_mu, nfft, seed, data_type);
 
-    % Propagate the scintillation field.
-    propagated_scint_field = get_propagated_field(mu, detrended_phase_realization);
-
+% Propagate the scintillation field.
+propagated_scint_field = get_propagated_field(mu, detrended_phase_realization);
 end

@@ -58,7 +58,7 @@ sim_params.cte.all_constellations = ["gps","galileo","glonass","beidou"];
 sim_params.cte.valid_constellations = ["gps","galileo"];
 % all possible constellations and their repectives IDS, shown in
 % `los_sat_params.Source`
-sim_params.cte.all_ids = ["PRN:","GAL Sat ID:"];
+sim_params.cte.all_svid_prefix = ["PRN:","GAL Sat ID:"];
 
 % frequency
 % GPS L1 (1575.42e6), L2 (1227.60e6), L5 (1176.45e6) relative to fundamental

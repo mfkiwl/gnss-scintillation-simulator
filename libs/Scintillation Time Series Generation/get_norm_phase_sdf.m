@@ -1,4 +1,4 @@
-function norm_phase_sdf = get_norm_phase_sdf(mu, irr_param)
+function norm_phase_sdf = get_norm_phase_sdf(mu, spectral_params)
 % get_norm_phase_sdf
 %
 % Syntax:
@@ -57,23 +57,24 @@ function norm_phase_sdf = get_norm_phase_sdf(mu, irr_param)
     norm_phase_sdf = zeros(size(mu));
 
     % Indices for below and above μ0
-    idx_below = (abs(mu) <= irr_param.mu0);
-    idx_above = (abs(mu) > irr_param.mu0);
+    idx_below = (abs(mu) <= spectral_params.mu0);
+    idx_above = (abs(mu) > spectral_params.mu0);
 
-    if irr_param.mu0>=1
-        Cpp= irr_param.U;
+    % TODO: cite ref
+    if spectral_params.mu0>=1
+        Cpp= spectral_params.U;
     else
-        Cpp= irr_param.U / irr_param.mu0^(irr_param.p2-irr_param.p1);
+        Cpp= spectral_params.U / spectral_params.mu0^(spectral_params.p2-spectral_params.p1);
     end
 
     % First case
     norm_phase_sdf(idx_below) = ...
-        Cpp .* abs(mu(idx_below)).^(-irr_param.p1);
+        Cpp .* abs(mu(idx_below)).^(-spectral_params.p1);
 
     % Second case
     norm_phase_sdf(idx_above) = ...
-        Cpp .* (irr_param.mu0^(irr_param.p2 - irr_param.p1)) ...
-        .* abs(mu(idx_above)).^(-irr_param.p2);
+        Cpp .* (spectral_params.mu0^(spectral_params.p2 - spectral_params.p1)) ...
+        .* abs(mu(idx_above)).^(-spectral_params.p2);
 
     % Manually set the singular point at μ=0 to zero
     norm_phase_sdf(mu == 0) = 0;
