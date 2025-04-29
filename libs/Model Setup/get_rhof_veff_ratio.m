@@ -1,6 +1,6 @@
-function rhof_veff_ratio_L1 = get_rhof_veff_ratio(time_utc, rx_traj_lla, rx_vel_ned, sat_traj_lla, sat_vel_ned, drift_vel_ned, ipp_altitude, freq, c)
+function rhof_veff_ratio_ref = get_rhof_veff_ratio(rx, sat, sim_params)
 % get_rhof_veff_ratio
-%
+%time_utc, rx_traj_lla, rx_vel_ned, sat_traj_lla, sat_vel_ned, drift_vel_ned, ipp_altitude, freq, c
 % Syntax:
 %   rhof_veff_ratio_L1 = get_rhof_veff_ratio(sim_params)
 %
@@ -79,6 +79,20 @@ function rhof_veff_ratio_L1 = get_rhof_veff_ratio(time_utc, rx_traj_lla, rx_vel_
 %   ORCID: https://orcid.org/0000-0003-0412-5583
 %   Email: rdlfresearch@gmail.com
 
+%% Initalization
+% get receiver LLA (latitude, longitude, altitude) trajectory and UTC time
+[rx_traj_lla, rx_vel_ned, time_utc] = states(rx, 'CoordinateFrame','geographic');
+% get satellite LLA (latitude, longitude, altitude) trajectory
+[sat_traj_lla, sat_vel_ned, ~]= states(sat, 'CoordinateFrame','geographic');
+% drift velocity
+drift_vel_ned = sim_params.drift_vel_ned;
+% IPP altitude
+ipp_altitude = sim_params.ipp_altitude;
+% reference frequency for which we are computing ρF/veff
+freq_ref = sim_params.cte.spectral.freq_ref.value;
+% spped of light
+c = sim_params.cte.c;
+% CU interface
 gps_week_in_seconds = NaN;
 eph = NaN;
 
@@ -101,8 +115,8 @@ effective_ipp_range = ipp2rx_range .* (rx2sat_range - ipp2rx_range) ./ rx2sat_ra
 % Mean ratio (rho_F / v_eff) at L1 [1, Eq. (12)]
 % The usage of the average ratio follows the approach introduced by "Joy"
 % in the gnss-scintillation-simulator-2-param repository.
-rhof_veff_ratio_L1 = mean( ...
-    sqrt(effective_ipp_range) ./ (veff * sqrt((2 * pi * freq) / c)) ...
+rhof_veff_ratio_ref = mean( ...
+    sqrt(effective_ipp_range) ./ (veff * sqrt((2 * pi * freq_ref) / c)) ...
     );
 
 end

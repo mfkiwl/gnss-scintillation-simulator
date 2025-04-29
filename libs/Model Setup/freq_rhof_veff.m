@@ -1,5 +1,4 @@
-function [rho_veff_ratio, extrapolated_spectral_params] = ...
-    freq_extrapolate(spectral_params_ref, rho_veff_ratio_ref, freq_ref, freq)
+function rhof_veff_ratio = freq_rhof_veff(sim_params, freq, rhof_veff_ratio_ref)
 % freq_extrapolate
 %
 % Syntax:
@@ -68,61 +67,10 @@ function [rho_veff_ratio, extrapolated_spectral_params] = ...
 %   ORCID: https://orcid.org/0000-0003-0412-5583
 %   Email: rdlfresearch@gmail.com
 
-%% freq_ref == freq -> No extrapolation
-if freq == freq_ref
-    rho_veff_ratio = rho_veff_ratio_ref;
-
-    extrapolated_spectral_params.p1  = spectral_params_ref.p1;
-    extrapolated_spectral_params.p2  = spectral_params_ref.p2;
-    extrapolated_spectral_params.U   = spectral_params_ref.U_ref;
-    extrapolated_spectral_params.mu0 = spectral_params_ref.mu0_ref;
-    % early return
-    return
-end
-
 %% Initialization
-% Extract parameters at the reference frequency
-U_ref   = spectral_params_ref.U_ref;
-mu0_ref = spectral_params_ref.mu0_ref;
-p1     = spectral_params_ref.p1;
-p2     = spectral_params_ref.p2;
-
-%% Extrapolate the spectral parameter μ₀
-
-% Extrapolate mu0 from freq_ref to freq
-mu0 = mu0_ref * sqrt(freq_ref / freq);
-
-%% Extrapolate the spectral parameter U
-
-% Exponents for (freq_ref/freq) based on p1.
-exponent_p1 = 0.5 * p1 + 1.5;
-
-% Determine the cases for U(freq) computation.
-cond_ref = (mu0_ref >= 1);
-cond_freq = (mu0 >= 1);
-
-if cond_ref && cond_freq
-    % Case 1: mu0(freq_ref) >= 1, mu0(freq) >= 1
-    U = U_ref * (freq_ref/freq)^exponent_p1;
-elseif ~cond_ref && cond_freq
-    % Case 2: mu0(freq_ref) < 1, mu0(freq) >= 1
-    U = U_ref / mu0_ref^(p2 - p1) * (freq_ref/freq)^exponent_p1;
-else
-    % Case 3: mu0(freq_ref) < 1, mu0(freq) < 1
-    assert((mu0_ref < 1) && (mu0 < 1), ['Unexpected values of μ₀ for both reference ' ...
-        'and target frequencies for extrapolation of U. You should check\n' ...
-        'why the source code is wrongly reaching at this point before\n' ...
-        'going on and assuming that the extrapolation spet is right.']);
-    U = U_ref * (mu0 / mu0_ref)^(p2 - p1) * (freq_ref/freq)^exponent_p1;
-end
-
-%% spectral parameters output
-extrapolated_spectral_params.p1 = spectral_params_ref.p1;
-extrapolated_spectral_params.p2 = spectral_params_ref.p2;
-extrapolated_spectral_params.U = U;
-extrapolated_spectral_params.mu0 = mu0;
+freq_ref = sim_params.cte.spectral.freq_ref.value;
 
 %% Extrapolate the scaling parameter
 % Scale the reference ratio (rho_F / v_eff) for L2 and L5 [Eq. (13)].
-rho_veff_ratio = rho_veff_ratio_ref * sqrt(freq_ref / freq);
+rhof_veff_ratio = rhof_veff_ratio_ref * sqrt(freq_ref / freq);
 end

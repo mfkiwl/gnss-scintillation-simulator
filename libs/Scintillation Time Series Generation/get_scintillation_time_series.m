@@ -1,5 +1,5 @@
-function [propagated_scint_field,norm_phase_psd,detrended_phase_realization,mu,doppler_frequency] ...
-= get_scintillation_time_series(sim_time, t_samp, spectral_params, rhof_veff_ratio, seed, varargin)
+function [propagated_scint_field,norm_phase_psd,detrended_phase_realization,mu] ...
+= get_scintillation_time_series(doppler_frequency, spectral_params, rhof_veff_ratio, nfft, seed, varargin)
 % get_scintillation_time_series
 %
 % Syntax:
@@ -82,23 +82,30 @@ function [propagated_scint_field,norm_phase_psd,detrended_phase_realization,mu,d
 % ORCID: https://orcid.org/0000-0003-0412-5583
 % Email: rdlfresearch@gmail.com
 
+%% Initialization
 % FIXME: This varargin should be removed as it seems not necessary anymore    
 p = inputParser;
 addParameter(p, 'data_type', 'double', @(x) ischar(x) || isstring(x));
 parse(p, varargin{:});
 data_type = p.Results.data_type;
 
-nfft = nicefftnum(sim_time / t_samp);
-doppler_frequency = (-nfft/2 : nfft/2-1) / (nfft * t_samp);
 % normalized frequency axis
 % TODO: add a SEE: codetag with a ref
 mu = 2 * pi * doppler_frequency * rhof_veff_ratio;
 D_mu = mu(2) - mu(1);
 
+%% Phase scren realization
 % Obtain the normalized phase spectral density function.
 norm_phase_psd = get_norm_phase_psd(mu, spectral_params);
 
-% Generate the random phase realization (note: 'D_mu' must be defined externally).
+% Generate the random phase realization
+% NOTE: This is not the propagated phase and represents only the refractive
+% effect on the IPP. The difractive part occurs only when we propagate a
+% complex field whose phase is `detrended_phase_realization`. If you
+% subtract phase of the propagated complex field by
+% `detrended_phase_realization`, you get the diffractive phase
+% NOTE: we call it "detrented" because there is a function called `linex()`
+% which removes the linear trend of the phase realization.
 detrended_phase_realization = get_phase_realization(norm_phase_psd, D_mu, nfft, seed, data_type);
 
 % Propagate the scintillation field.
