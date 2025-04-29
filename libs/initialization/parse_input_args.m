@@ -142,9 +142,10 @@ default_frequencies     = "all";                                % Default freque
 default_log_lvl         = "DEBUG";                              % Default log level
 default_sim_time        = 300;                                  % total simulation time in seconds
 default_t_samp          = 1;                                    % sampling time in seconds
-default_ipp_altitude         = 350e3;                                % IPP altitude in meters
+default_ipp_altitude    = 350e3;                                % IPP altitude in meters
 default_drift_vel_ned   = [0 125 0];                            % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
 default_severity        = "strong";                             % Ionospheric scintllation severity
+default_is_plot         = false;                                % Whether plot the ionospheric scintillation realization
 
 %% Parsing phase 0: resolve the logging before anything else
 
@@ -177,6 +178,8 @@ p = inputParser;
 p.KeepUnmatched = true;
 % Add download_rinex parameter: must be a logical scalar
 addParameter(p, 'download_rinex',   default_is_down_rinex, ...
+    @(x) isscalar(x) && islogical(x));
+addParameter(p, 'plot',   default_is_plot, ...
     @(x) isscalar(x) && islogical(x));
 % Add rx_origin parameter: must be a numeric 3-element vector
 addParameter(p, 'rx_origin',   default_rx_origin, ...
@@ -241,12 +244,13 @@ parsed_input_args.is_download_rinex   = p.Results.download_rinex;               
 parsed_input_args.svids               = string(p.Results.svid);                 % satellite PRNs
 parsed_input_args.sim_time            = p.Results.sim_time;                     % total simulation time (s)
 parsed_input_args.t_samp              = p.Results.t_samp;                       % sampling time (s)
-parsed_input_args.ipp_altitude             = p.Results.ipp_altitude;                      % IPP altitude in meters
+parsed_input_args.ipp_altitude        = p.Results.ipp_altitude;                      % IPP altitude in meters
 parsed_input_args.rinex_filename      = string(p.Results.rinex_filename);       % RINEX file path
 parsed_input_args.datetime            = p.Results.datetime;                     % datetime
 parsed_input_args.constellations      = lower(string(p.Results.constellation)); % constellations
 parsed_input_args.frequencies         = string(p.Results.frequency);            % frequencies
 parsed_input_args.severity            = string(p.Results.severity);            % severity
+parsed_input_args.is_plot             = p.Results.plot;
 
 end
 

@@ -86,8 +86,8 @@ end
 % if input frequency name is `'all'`, replace it by all frequencies from
 % the simulation paramater's constellations
 if strcmpi(input_freq_names, 'all')
-    input_freq_names = [all_freq_names.gps all_freq_names.galileo ...
-    all_freq_names.glonass all_freq_names.beidou];
+    input_freq_names = [all_freq.name.gps all_freq.name.galileo ...
+    all_freq.name.glonass all_freq.name.beidou];
 end
 
 % select frequencies

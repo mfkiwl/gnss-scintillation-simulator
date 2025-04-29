@@ -1,48 +1,56 @@
+# Makefile.linux
+# Build shared library and executables with correct PIC/PIE flags
 
-# Note that we should use -m32 so that long is 4 bytes like IDL_LONG and not 8 bytes,
-# however, if we do this IDL can't call load the dynamic loading library *.so
-#gcc -Wall -fPIC -c -I../../include *.c
+CC = gcc
 
-CFLAGS = -Wall -O3
-#CFLAGS = -Wall -g
+# Compiler flags
+default_CFLAGS = -Wall -O3
+PICFLAGS     = -fPIC      # for shared library objects
+# PIEFLAGS    = -fPIE      # not needed when linking executables with -no-pie
 
+# Linker flags for executables
+o_LDFLAGS = -no-pie
+
+# Targets
 all: gamma_integral.so.1.0 ispectrum gam_quadrature gam_analytic
 
-gamma_integral.o : gamma_integral.c gamma_integral.h
-	$(CC) -fPIC -c -I../../include gamma_integral.c -lm
+# Shared library for gamma_integral
+gamma_integral.o: gamma_integral.c gamma_integral.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c -I../../include gamma_integral.c
 
-gamma_integral.so.1.0 : gamma_integral.o intde1.o
-	$(CC) -shared -Wl,-soname,gamma_integral.so.1 -o gamma_integral.so.1.0  gamma_integral.o intde1.o -lm
+intde1.o: intde1.c intde1.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c intde1.c
 
-ispectrum.o : ispectrum.c 
-	$(CC) -c ispectrum.c -lm
-    
-gam_analytic.o : gam_analytic.c gam_analytic.h
-	$(CC) -c gam_analytic.c -lm
+gamma_integral.so.1.0: gamma_integral.o intde1.o
+	$(CC) -shared -Wl,-soname,gamma_integral.so.1 -o gamma_integral.so.1.0 gamma_integral.o intde1.o -lm
 
-gam_analytic_main.o : gam_analytic.c gam_analytic.h
-	$(CC) -c -DMAIN gam_analytic.c -o gam_analytic_main.o -lm
+# Object files for executables (also PIC-safe)
+ispectrum.o: ispectrum.c
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c ispectrum.c
 
-gam_analytic : gam_analytic_main.o
-	$(CC) -o gam_analytic gam_analytic_main.o -lm
+gam_analytic.o: gam_analytic.c gam_analytic.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c gam_analytic.c
 
-gam_quadrature.o : gam_quadrature.c gam_quadrature.h 
-	$(CC) -c gam_quadrature.c -lm
+gam_analytic_main.o: gam_analytic.c gam_analytic.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c -DMAIN gam_analytic.c -o gam_analytic_main.o
 
-intde1.o : intde1.c intde1.h
-	$(CC) -fPIC -c intde1.c -lm
-    
-gam_quadrature_main.o : gam_quadrature.c gam_quadrature.h
-	$(CC) -c -DMAIN gam_quadrature.c -o gam_quadrature_main.o -lm
+gam_quadrature.o: gam_quadrature.c gam_quadrature.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c gam_quadrature.c
 
-gam_quadrature : gam_quadrature_main.o gamma_integral.o gam_analytic.o intde1.o
-	$(CC) -o gam_quadrature gam_quadrature_main.o gamma_integral.o gam_analytic.o intde1.o -lm
+gam_quadrature_main.o: gam_quadrature.c gam_quadrature.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c -DMAIN gam_quadrature.c -o gam_quadrature_main.o
+
+# Binaries linking with -no-pie
+gam_analytic: gam_analytic_main.o
+	$(CC) $(o_LDFLAGS) -o gam_analytic gam_analytic_main.o -lm
+
+gam_quadrature: gam_quadrature_main.o gamma_integral.o gam_analytic.o intde1.o
+	$(CC) $(o_LDFLAGS) -o gam_quadrature gam_quadrature_main.o gamma_integral.o gam_analytic.o intde1.o -lm
 
 ispectrum: ispectrum.o gam_quadrature.o gamma_integral.o gam_analytic.o intde1.o
-	$(CC) -o ispectrum ispectrum.o gam_quadrature.o gamma_integral.o gam_analytic.o intde1.o -lm
+	$(CC) $(o_LDFLAGS) -o ispectrum ispectrum.o gam_quadrature.o gamma_integral.o gam_analytic.o intde1.o -lm
 
+# Clean
 clean:
-	-rm ispectrum.o gam_quadrature.o gamma_integral.o gam_analytic.o gam_analytic_main.o gam_quadrature_main.o gamma_integral.so.1.0 ispectrum gam_quadrature gam_analytic
+	rm -f *.o *.so.1.0 ispectrum gam_quadrature gam_analytic
 
-.c.o:
-	$(CC) -c $(CFLAGS) $<

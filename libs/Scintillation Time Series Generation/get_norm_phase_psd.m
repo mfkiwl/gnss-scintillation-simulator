@@ -1,4 +1,4 @@
-function norm_phase_sdf = get_norm_phase_sdf(mu, spectral_params)
+function norm_phase_sdf = get_norm_phase_psd(mu, spectral_params)
 % get_norm_phase_sdf
 %
 % Syntax:

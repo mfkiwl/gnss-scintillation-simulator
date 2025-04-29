@@ -96,7 +96,7 @@ mu = 2 * pi * doppler_frequency * rhof_veff_ratio;
 D_mu = mu(2) - mu(1);
 
 % Obtain the normalized phase spectral density function.
-norm_phase_psd = get_norm_phase_sdf(mu, spectral_params);
+norm_phase_psd = get_norm_phase_psd(mu, spectral_params);
 
 % Generate the random phase realization (note: 'D_mu' must be defined externally).
 detrended_phase_realization = get_phase_realization(norm_phase_psd, D_mu, nfft, seed, data_type);
