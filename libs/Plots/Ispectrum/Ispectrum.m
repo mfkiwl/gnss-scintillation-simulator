@@ -1,4 +1,4 @@
-function [Imu,mu,S4,Cpp,nstp,result]=Ispectrum(U,p1,p2,mu0,varargin)
+function [Imu,mu,S4,Cpp,nstp,result]=Ispectrum(cspsm_root_dir, U,p1,p2,mu0,varargin)
 %USAGE      [Imu,mu,S4,Cpp,nstp,result]=Ispectrum(U,p1,p2,mu0)
 %
 %      Ispectrum Parameters
@@ -59,12 +59,24 @@ function [Imu,mu,S4,Cpp,nstp,result]=Ispectrum(U,p1,p2,mu0,varargin)
 
 IspecParams=generateIspecParams(U,p1,p2,mu0);
 fclose('all');      %Seems to be necessary to avoid error with multiple calls CLR Nov 2016
-[status,result]= system(['"',fullfile(pwd,'..','libs','plots','Ispectrum','ispectrum.exe'),'" ',IspecParams]);
+
+% determine the executable
+if isunix % GNU/Linux
+    ispectrum_exe = 'ispectrum';
+elseif ispc % Windows
+    ispectrum_exe = 'ispectrum.exe';
+elseif ismac % MacOS
+    error('There is executable for macOS. Compile Ispectrum for this operating system');
+else
+    error('Unknown operating system.');
+end
+
+[status,result]= system(['"',fullfile(cspsm_root_dir,'libs','Plots','Ispectrum',ispectrum_exe),'" ',IspecParams]);
 if status~=0
     error(result)
 end
 %NOTE: .dat and .log files are written in pwd
-fid=fopen([pwd,'\ispectrum.log'],'r');
+fid=fopen(fullfile(cspsm_root_dir,'ispectrum.log'),'r');
 logtxt=textscan(fid,'%s');
 if ~isempty(varargin)
     fprintf('Ustar      U1        U2        p1       p2     mu0   mu_o  mu_i      S4    sigP    sigNfc num \n')
@@ -80,7 +92,7 @@ if mu0>=1
 else
     Cpp=U/mu0^(p2-p1);
 end
-data=importdata([pwd,'\ispectrum.dat']);
+data=importdata(fullfile(cspsm_root_dir,'ispectrum.dat'));
 [~,ndata]=size(data);
 if ndata~=3
     fclose('all');
@@ -91,6 +103,6 @@ Imu=data(:,2);
 nstp=data(:,3);
 end
 fclose('all');
-delete([pwd,'\ispectrum.dat']);
-delete([pwd,'\ispectrum.log']);
+delete(fullfile(cspsm_root_dir,'ispectrum.dat'));
+delete(fullfile(cspsm_root_dir,'ispectrum.log'));
 return

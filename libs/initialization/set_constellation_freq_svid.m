@@ -1,9 +1,19 @@
-function [sim_params_constellations, sim_params_freqs, sim_params_svids] = set_constellation_freq_svid(log, all_constellations, all_freq, all_ids, input_constellations, input_freq_names, input_svids, los_sats_params)
+function sim_params = set_constellation_freq_svid(log, sim_params, ...
+    parsed_argins, los_sats_params)
 %SET_CONSTELLATION_AND_FREQ Summary of this function goes here
 %   Detailed explanation goes here
+%% Initialization
+all_constellations = sim_params.cte.all_constellations;
+all_svids = sim_params.cte.all_svid_prefix;
+all_freq = sim_params.cte.all_freqs;
+
+input_constellations = parsed_argins.constellations;
+input_freq_names = parsed_argins.frequencies;
+input_svids = parsed_argins.svids;
+
 %% Get available contellations
 % get all available contellations shown in `los_sat_params.Source`
-available_constellations = all_constellations(arrayfun(@(id) any(contains(los_sats_params.Source, id)), all_ids ));
+available_constellations = all_constellations(arrayfun(@(id) any(contains(los_sats_params.Source, id)), all_svids ));
 
 if isempty(char(available_constellations))
     log.error('', ['For the given prograpation geometry, datetime, and RINEX file, there\n' ...
@@ -76,8 +86,8 @@ end
 % if input frequency name is `'all'`, replace it by all frequencies from
 % the simulation paramater's constellations
 if strcmpi(input_freq_names, 'all')
-    input_freq_names = [all_freq_names.gps all_freq_names.galileo ...
-    all_freq_names.glonass all_freq_names.beidou];
+    input_freq_names = [all_freq.name.gps all_freq.name.galileo ...
+    all_freq.name.glonass all_freq.name.beidou];
 end
 
 % select frequencies
@@ -85,7 +95,8 @@ for sim_params_constellation=sim_params_constellations
     % frequency name indices for this constellation that matches with user argin
     idx = ismember(all_freq.name.(sim_params_constellation), input_freq_names);
     if nnz(idx)
-        sim_params_freqs.(sim_params_constellation) = all_freq.value.(sim_params_constellation)(idx);
+        sim_params_freq.(sim_params_constellation).name = all_freq.name.(sim_params_constellation)(idx);
+        sim_params_freq.(sim_params_constellation).value = all_freq.value.(sim_params_constellation)(idx);
     else
         log.warning('', ['You have included %s as a constellation, but you have not included any %s frequency\n' ...
             'for that. Therefore, this constellation will be excluded. If you did not mean that,\n' ...
@@ -98,6 +109,11 @@ end
 %% TODO: resolve SVIDS
 
 sim_params_svids = input_svids;
+
+%% Set values
+sim_params.constellations = sim_params_constellations;
+sim_params.freqs = sim_params_freq;
+sim_params.svids = sim_params_svids;
 
 end
 

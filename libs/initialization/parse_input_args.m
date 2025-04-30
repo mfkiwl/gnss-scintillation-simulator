@@ -99,7 +99,7 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, all_constel
 %   't_samp'              - (optional, seconds, scalar) Sampling time.
 %                       Default: 1
 %
-%   'ipp_alt'      - (optional, meters, scalar) Ionospheric piercing
+%   'ipp_altitude'      - (optional, meters, scalar) Ionospheric piercing
 %                       point (IPP) altitude.
 %                       Default: 350e3
 %
@@ -141,9 +141,11 @@ default_constellations  = "";                                   % Constellations
 default_frequencies     = "all";                                % Default frequency. Empty string means that it should be defined interactively
 default_log_lvl         = "DEBUG";                              % Default log level
 default_sim_time        = 300;                                  % total simulation time in seconds
-default_t_samp          = 1;                                    % sampling time in seconds
-default_ipp_alt         = 350e3;                                % IPP altitude in meters
+default_t_samp          = 10e-3;                                    % sampling time in seconds
+default_ipp_altitude    = 350e3;                                % IPP altitude in meters
 default_drift_vel_ned   = [0 125 0];                            % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
+default_severity        = "strong";                             % Ionospheric scintllation severity
+default_is_plot         = false;                                % Whether plot the ionospheric scintillation realization
 
 %% Parsing phase 0: resolve the logging before anything else
 
@@ -177,6 +179,8 @@ p.KeepUnmatched = true;
 % Add download_rinex parameter: must be a logical scalar
 addParameter(p, 'download_rinex',   default_is_down_rinex, ...
     @(x) isscalar(x) && islogical(x));
+addParameter(p, 'plot',   default_is_plot, ...
+    @(x) isscalar(x) && islogical(x));
 % Add rx_origin parameter: must be a numeric 3-element vector
 addParameter(p, 'rx_origin',   default_rx_origin, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
@@ -189,8 +193,8 @@ addParameter(p, 'sim_time', default_sim_time, ...
 % Add t_samp parameter: must be a positive numeric scalar
 addParameter(p, 't_samp',          default_t_samp, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
-% Add ipp_alt parameter: must be a positive numeric scalar
-addParameter(p, 'ipp_alt',  default_ipp_alt, ...
+% Add ipp_altitude parameter: must be a positive numeric scalar
+addParameter(p, 'ipp_altitude',  default_ipp_altitude, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
 % Add drift_vel parameter: must be a numeric 3-element vector.
 addParameter(p, 'drift_vel',   default_drift_vel_ned, ...
@@ -209,11 +213,14 @@ addParameter(p, 'frequency', default_frequencies, ...
 % Add svid parameter: valid strings depend on the set constellation
 addParameter(p, 'svid',       default_svids, ...
     @(x) validate_svid(log, p.Results.constellation, x));
-% Add datetime parameter: must be datetime object and `rinex_filename`  must be
+% Add datetime parameter: must be datetime object and `rinex_filename` must be
 % empty
 addParameter(p, 'datetime',    default_datetime, ...
     @(x) validate_datetime(log, p.Results.download_rinex, ...
     p.Results.rinex_filename, x));
+% Add severity parameter: must be "weak", "moderate", or "strong"
+addParameter(p, 'severity',    default_severity, ...
+    @(x) isscalar(string(x)) && ismember(x, ["weak", "moderate", "strong"]));
 
 % parse it
 parse(p, varargin{:});
@@ -237,11 +244,13 @@ parsed_input_args.is_download_rinex   = p.Results.download_rinex;               
 parsed_input_args.svids               = string(p.Results.svid);                 % satellite PRNs
 parsed_input_args.sim_time            = p.Results.sim_time;                     % total simulation time (s)
 parsed_input_args.t_samp              = p.Results.t_samp;                       % sampling time (s)
-parsed_input_args.ipp_alt             = p.Results.ipp_alt;                      % IPP altitude in meters
+parsed_input_args.ipp_altitude        = p.Results.ipp_altitude;                      % IPP altitude in meters
 parsed_input_args.rinex_filename      = string(p.Results.rinex_filename);       % RINEX file path
 parsed_input_args.datetime            = p.Results.datetime;                     % datetime
 parsed_input_args.constellations      = lower(string(p.Results.constellation)); % constellations
 parsed_input_args.frequencies         = string(p.Results.frequency);            % frequencies
+parsed_input_args.severity            = string(p.Results.severity);            % severity
+parsed_input_args.is_plot             = p.Results.plot;
 
 end
 

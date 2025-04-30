@@ -1,4 +1,4 @@
-function [outputArg1,outputArg2] = cspsm(varargin)
+function out = cspsm(varargin)
 % cspsm Compact scintillation phase screen model
 %
 % Syntax:
@@ -14,6 +14,10 @@ function [outputArg1,outputArg2] = cspsm(varargin)
 %   receivers.
 %
 %
+% [1] Jiao, Yu, Charles Rino, Yu (Jade) Morton, and Charles Carrano. 
+% “Scintillation Simulation on Equatorial GPS Signals for Dynamic 
+% Platforms,” 1644–57, 2017. https://doi.org/10.33012/2017.15258.
+%
 %
 %
 %% Add to path
@@ -25,20 +29,18 @@ addpath(genpath(fullfile(cspsm_root_dir,'cache')));
 sim_params = get_cte_sim_params();
 
 %% handle input args
-[parsed_input_args, log] = parse_input_args(cspsm_root_dir, sim_params.cte.all_constellations, varargin{:});
+[parsed_argins, log] = parse_input_args(cspsm_root_dir, ...
+    sim_params.cte.all_constellations, varargin{:});
 
 % set basic simulation parameters directly from the input arguments: IPP
 % altitude, drift velocity and receiver parameters
 % TODO: when adjusting the program for dynamic receiver, set rx parameters
 % (trajectory, velocity) directry from the `platform()` instead of the
 % parsed input parameters
-[sim_params.drift_vel_ned, sim_params.rx, sim_params.ipp_altitude] = set_ippalt_vdrift(parsed_input_args.rx_vel_ned, ...
-    parsed_input_args.drift_vel_ned, parsed_input_args.ipp_alt);
+sim_params = set_sim_params_from_argin(sim_params, parsed_argins);
 
 %% get RINEX file
-[time_range, rinex] = get_rinex(cspsm_root_dir, ...
-    parsed_input_args.is_download_rinex, parsed_input_args.datetime, ...
-    parsed_input_args.rinex_filename, parsed_input_args.sim_time);
+[sim_params.time_range, rinex] = get_rinex(cspsm_root_dir, parsed_argins);
 
 %% Get line-of-sight (LOS) satellites
 
@@ -46,12 +48,12 @@ sim_params = get_cte_sim_params();
 % TODO: At the moment, the sample time is set to one second. As it becomes
 % clearer what this value should be, you must reset it as either hardcoded
 % or from an input argument
-sat_scen = satelliteScenario(time_range.start, time_range.end, 1);
+sat_scen = satelliteScenario(sim_params.time_range.start, sim_params.time_range.end, 1);
 
 % instantiate satellites for each constellation from the RINEX ephemerides
 all_sats = satellite(sat_scen, rinex);
 
-% CAVEAT: It is not clear to me how the velocity is defined or, at least,
+% FIXME: It is not clear to me how the velocity is defined or, at least,
 % maintained constant. `geoTrajectory()` seems to require a starting and
 % ending position, as well as the travel duration to compute the
 % trajectory. It has some ways to add velocity (or speed) information, but
@@ -62,9 +64,9 @@ all_sats = satellite(sat_scen, rinex);
 % try, the receiver is being here to be static
 % SEE: https://www.mathworks.com/help/satcom/ref/geotrajectory-system-object.html
 rx_traj = geoTrajectory( ...
-    [parsed_input_args.rx_origin; parsed_input_args.rx_origin], ...
-    [0 seconds(time_range.end - time_range.start)], ...
-    'SampleRate', parsed_input_args.t_samp);
+    [parsed_argins.rx_origin; parsed_argins.rx_origin], ...
+    [0 sim_params.sim_time], ...
+    'SampleRate', parsed_argins.t_samp);
 
 rx = platform(sat_scen, rx_traj, 'Receiver');
 
@@ -76,37 +78,94 @@ los_sats_params = ac.accessIntervals;
 
 % set the simulation parameters' frequencies and constellations based on
 % the LOS satellites' parameters and user input arguments
-[sim_params.constellations, sim_params.freqs, sim_params.svids] = set_constellation_freq_svid( ...
-    log, sim_params.cte.all_constellations, sim_params.cte.all_freqs, ...
-    sim_params.cte.all_ids, ...
-    parsed_input_args.constellations, parsed_input_args.frequencies, ...
-    parsed_input_args.svids, los_sats_params);
+sim_params = set_constellation_freq_svid(log, sim_params, ...
+    parsed_argins, los_sats_params);
 
 % get user-filtered LOS sats IDS (filtered by constellation and SV IDS)
-filtered_los_sats_params = get_filtered_los_sat_params(log, ...
-    sim_params.cte.all_constellations, sim_params.svids, ...
-    sim_params.constellations, sim_params.cte.all_ids, ...
-    time_range, los_sats_params);
+filtered_los_sats_params = get_filtered_los_sat_params(log, sim_params, ...
+    los_sats_params);
 
-filtered_los_sats = all_sats(ismember(all_sats.Name, filtered_los_sats_params.Source));
+filtered_los_sats = all_sats(ismember(all_sats.Name, ...
+    filtered_los_sats_params.Source));
+sim_params.sats = filtered_los_sats;
 
-%% Phase screen realization for each satellite-receiver propagation geometry and frequency
-
-% get receiver LLA (latitude, longitude, altitude) and UTC time
-[rx_traj_lla, ~, time_utc] = states(rx, 'CoordinateFrame','geographic');
-
-% TODO: get the receiver velocity from `states(rx, ...)` instead of the
-% user inputs
-rx_vel_ned = repmat(sim_params.rx.vel_ned.', 1, numel(time_utc));
-
-for filtered_los_sat = filtered_los_sats
-    % set satellite trajectory and velocities
-    [sat_traj_lla, sat_vel_ned, ~]= states(filtered_los_sat, 'CoordinateFrame','geographic');
-    % for all simulation frequencies for this contellation
-    for freq = sim_params.freqs.(filtered_los_sat.OrbitPropagator)
-        rhof_veff_ratio = get_rhof_veff_ratio(time_utc, ...
-        rx_traj_lla, rx_vel_ned, sat_traj_lla, sat_vel_ned, sim_params.drift_vel_ned, sim_params.ipp_altitude, freq, sim_params.cte.c);
+%% Compute the nongeometric-dependent outputs
+% They are
+% - U and μ₀: dependent only on the frequency (computed via extrapolation)
+% - p₁ and p₂: independent
+% - Doppler frequency: dependent only on t_samp and FFT samples
+% - UTC time: independent
+seed = 4;
+nfft = nicefftnum(sim_params.sim_time / sim_params.t_samp);
+% Frequency support where the PSD are plotted
+out.doppler_frequency_support = (-nfft/2 : nfft/2-1) / (nfft * sim_params.t_samp);
+% UTC timestamps of the propagation geometry
+[~, ~, out.time_utc] = states(rx, 'CoordinateFrame','geographic');
+for constellation = sim_params.constellations
+    for i = 1:numel(sim_params.freqs.(constellation).value)
+        freq_name = sim_params.freqs.(constellation).name(i);
+        freq_value = sim_params.freqs.(constellation).value(i);
+        
+        % extrapolate U, and μ₀ from `freq_ref` to `freq`
+        out.(constellation).spectral.(freq_name) = ...
+            extrapolate_spectral_params(sim_params, freq_value);
+        % initialize a 0x0 struct array which will store geometric-related
+        % outputs. Each, struct scalar in this array is related to a sat-rx
+        % geometry
+        out.(constellation).scenario = struct([]);
     end
+end
+
+%% Compute the geometric related output
+% for all filtered LOS sat (of a given contellation)
+for i = 1:numel(sim_params.sats)
+    % get LOS sat and constellation name
+    sat = sim_params.sats(i);
+    sat_constellation = sat.OrbitPropagator;
+    % save sat and receiver to output
+    out.(sat_constellation).scenario(end+1).sat = sat;
+    out.(sat_constellation).scenario(end).rx = rx;
+    % for this geometry propagation, get the ρF/veff for the reference
+    % frequency
+    rhof_veff_ratio_ref = get_rhof_veff_ratio(rx, sat, sim_params);
+
+    % for all valid frequencies for this contellation
+    for j = 1:numel(sim_params.freqs.(sat_constellation).name)
+        freq_name = sim_params.freqs.(sat_constellation).name(j);
+        freq_value = sim_params.freqs.(sat_constellation).value(j);
+
+        rhof_veff_ratio = freq_rhof_veff(sim_params, freq_value, rhof_veff_ratio_ref);
+        
+        % get scintillation realization
+        [scint_field, norm_phase_psd, detrended_phase, mu] = ...
+            get_scintillation_time_series( ...
+            out.doppler_frequency_support, ...
+            out.(constellation).spectral.(freq_name), ...
+            rhof_veff_ratio, ...
+            nfft, ...
+            seed);
+
+        % compute amplitude and phase time series of the received
+        % scintillation signal
+        amplitude = abs(scint_field.');
+        phase = unwrap(angle(scint_field.'));
+        
+        % outputs
+        out.(sat_constellation).scenario(end).(freq_name).scint_field = scint_field;
+        out.(sat_constellation).scenario(end).(freq_name).amplitude = amplitude;
+        out.(sat_constellation).scenario(end).(freq_name).phase = phase;
+        out.(sat_constellation).scenario(end).(freq_name).detrended_phase = detrended_phase;
+        out.(sat_constellation).scenario(end).(freq_name).mu = mu;
+        out.(sat_constellation).scenario(end).(freq_name).norm_phase_psd = norm_phase_psd;
+        out.(sat_constellation).scenario(end).(freq_name).rhof_veff_ratio = rhof_veff_ratio;
+    end
+    
+end
+
+%% Plot output
+
+if parsed_argins.is_plot
+    plot_scintillation_realization(out, sim_params.severity, cspsm_root_dir);
 end
 
 end

@@ -83,7 +83,7 @@ function detrended_phase_realization = get_phase_realization(norm_phase_sdf, D_m
 
     %Remove linear trend to force segment too segment continuity
     % NOTE (Rodrigo): I've let this part the same as it is done in the
-    % TPPSM original code:
+    % CPSSM original code:
     % https://github.com/cu-sense-lab/gnss-scintillation-simulator_2-param/blob/master/Libraries/GenScintFieldRealization/GenScintFieldRealization.m
     linear_trend = linex( ...
         1:nfft, ...

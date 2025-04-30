@@ -1,7 +1,13 @@
-function [trange, rinex] = get_rinex(cspsm_root_dir, is_download_rinex, ...
-    dtime, rinex_filename, sim_time)
+function [trange, rinex] = get_rinex(cspsm_root_dir, parsed_argins)
 %GET_RINEX Summary of this function goes here
 %   Detailed explanation goes here
+
+%% Initialization
+
+is_download_rinex = parsed_argins.is_download_rinex;
+dtime             = parsed_argins.datetime;
+rinex_filename    = parsed_argins.rinex_filename;
+sim_time          = parsed_argins.sim_time;
 
 %% get RINEX from user inputs
 if is_download_rinex
