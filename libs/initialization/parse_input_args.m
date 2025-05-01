@@ -27,23 +27,34 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, all_constel
 %                           v3 = up-down velocity (downward +).
 %                       Default: [0; 0; 0].
 %
-%
+%   'rinex_download' -  (optional, logical scalar) A logical value
+%                       indicating whether the RINEX file should be
+%                       downloaded from https://cddis.nasa.gov/gnss/data/daily.
+%                       If it is true, the CPSSM downloads the RINEX file
+%                       for the same DD/MM/YYYY as defined in the datetime
+%                       argument.
+%                       Default: false
 %
 %   'rinex_filename' -  (opitional, string) full file path of the RINEX
-%                       file v3.04. If `'rinex_filename'` is `""`, then this
-%                       program tries to download an ephemeris file from
-%                       https://cddis.nasa.gov/archive/gnss/data/daily
-%                       using the `'datetime'` argument to search for.
-%                       Default: ""
+%                       file v3.04. You can pass `'rinex_filename'` if and
+%                       only if `rinex_download` is set to false. If it is
+%                       true, `'rinex_filename'` is ignored.
+%                       Default: "BRDM00DLR_R_20170500000_01D_MN.rnx"
 %
-%   'datetime'       -  (optional, datetime or NaN) A datetime object representing
-%                       the specific date and time used as a reference
-%                       point when searching for the a RINES file on CDDIS.
-%                       If `'rinex_filename'` is not empty, this variable is
-%                       ignored. We only support RINEX v3.04 or later,
-%                       which was introduced in 2015—so the provided
-%                       datetime must fall in the year 2016 or later.
-%                       Default: datetime([2017 01 02 10 00 00])
+%   'datetime'       -  (optional, datetime or NaN) A datetime object 
+%                       which defines the starting hh:mm:ss simulation
+%                       time. The ending time is defined as the starting
+%                       time plus the simulation duration. The difinition
+%                       of the DD/MM/YYYY of the simulation depends on the
+%                       RINEX file: if a RINEX file is downloaded, the
+%                       CPSSM uses the DD/MM/YYYY defined in this datetime.
+%                       Otherwise, if a local RINEX  file is used, the
+%                       DD/MM/YYYY is the same as defined in the RINEX
+%                       file, and the DD/MM/YYYY of this `datetime` is
+%                       therefore ignored. You should note that, if you are
+%                       downloading a RINEX file, you must pass a datetime
+%                       whose year is 2016 or later because only RINEX
+%                       v3.04 is supported.
 %
 %   'constellation'  -  (optional, string or string array) Desired
 %                       constellations. Valid constellations are `"gps"`,
@@ -85,7 +96,7 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, all_constel
 %                       must match with the defined constellation types. In
 %                       the previous example, the user must also input
 %                       `"gps"` as one of the desired constellations or
-%                       `"all"`. If all PRNs are wanted, the user must set
+%                       `"all"`. If all SVIDs are wanted, the user must set
 %                       the `svid` to `"all"`. If the user is unsure about
 %                       which satellites are available for the desired
 %                       datetime, they must input `""`. In this case, an
@@ -93,10 +104,18 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, all_constel
 %                       available satellite selection.
 %                       Default: ""
 %
+%   'severity'        - (optional, scalar string): The scintillation 
+%                       severity. It must be either `"weak"`, `"moderate"`,
+%                       or `"strong"`. The severity affects the disturbance
+%                       level caused by the scintillation realization,
+%                       which in turns alters the scitilllation-related
+%                       outputs.
+%                       Default: "strong"
+%
 %   'sim_time'        - (optional, seconds, scalar) Total simulation time.
 %                       Default: 300
 %
-%   't_samp'              - (optional, seconds, scalar) Sampling time.
+%   't_samp'          - (optional, seconds, scalar) Sampling time.
 %                       Default: 1
 %
 %   'ipp_altitude'      - (optional, meters, scalar) Ionospheric piercing
@@ -111,8 +130,19 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, all_constel
 %                         vdy: up-down velocity (downward +).
 %                       Default: [0; 100; 0].
 %
-% Outputs:
-
+%   'plot'             - (optional, logical scalar) A logical scalar
+%                      indicating whether plots concerning the ionospheric
+%                      scintillation realization should be shown. It does
+%                      not affect the simulation.
+%                      Default: false
+%
+%   'play'             - (optional, logical scalar) A logical scalar
+%                      indicating whether a animation of the geometry
+%                      between the receiver and the satellites should be
+%                      shown. It does not not affect the simulation.
+%                      Default: false
+%
+%
 %
 % Example:
 %   % Use default parameters:
@@ -141,11 +171,12 @@ default_constellations  = "";                                   % Constellations
 default_frequencies     = "all";                                % Default frequency. Empty string means that it should be defined interactively
 default_log_lvl         = "DEBUG";                              % Default log level
 default_sim_time        = 300;                                  % total simulation time in seconds
-default_t_samp          = 10e-3;                                    % sampling time in seconds
+default_t_samp          = 10e-3;                                % sampling time in seconds
 default_ipp_altitude    = 350e3;                                % IPP altitude in meters
 default_drift_vel_ned   = [0 125 0];                            % Ionosphere drift velocity [vdx, vdy, vdz] in m/s
 default_severity        = "strong";                             % Ionospheric scintllation severity
 default_is_plot         = false;                                % Whether plot the ionospheric scintillation realization
+default_is_play         = false;                                % Whether play an animation of the receiver and satellite geometry
 
 %% Parsing phase 0: resolve the logging before anything else
 
@@ -179,13 +210,17 @@ p.KeepUnmatched = true;
 % Add download_rinex parameter: must be a logical scalar
 addParameter(p, 'download_rinex',   default_is_down_rinex, ...
     @(x) isscalar(x) && islogical(x));
+% Add plot parameter: must be a logical scalar
 addParameter(p, 'plot',   default_is_plot, ...
+    @(x) isscalar(x) && islogical(x));
+% Add play parameter: must be a logical scalar
+addParameter(p, 'play',   default_is_play, ...
     @(x) isscalar(x) && islogical(x));
 % Add rx_origin parameter: must be a numeric 3-element vector
 addParameter(p, 'rx_origin',   default_rx_origin, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
 % Add rx_vel parameter: must be a numeric 3-element vector
-addParameter(p, 'rx_vel',      default_rx_vel_ned, ...
+addParameter(p, 'rx_vel_ned',      default_rx_vel_ned, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
 % Add sim_time parameter: must be a positive numeric scalar
 addParameter(p, 'sim_time', default_sim_time, ...
@@ -197,7 +232,7 @@ addParameter(p, 't_samp',          default_t_samp, ...
 addParameter(p, 'ipp_altitude',  default_ipp_altitude, ...
     @(x) isnumeric(x) && isscalar(x) && x>0);
 % Add drift_vel parameter: must be a numeric 3-element vector.
-addParameter(p, 'drift_vel',   default_drift_vel_ned, ...
+addParameter(p, 'drift_vel_ned',   default_drift_vel_ned, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
 % add constellation parameter: it must be one of the valid strings
 addParameter(p, 'constellation', default_constellations, ...
@@ -238,19 +273,20 @@ end
 
 % Parameters that may be overridden by the user:
 parsed_input_args.rx_origin           = p.Results.rx_origin;                    % rx origin
-parsed_input_args.rx_vel_ned          = p.Results.rx_vel;                       % rx velocity
-parsed_input_args.drift_vel_ned       = p.Results.drift_vel;                    % ionosphere drift velocity (m/s)
+parsed_input_args.rx_vel_ned          = p.Results.rx_vel_ned;                   % rx velocity
+parsed_input_args.drift_vel_ned       = p.Results.drift_vel_ned;                % ionosphere drift velocity (m/s)
 parsed_input_args.is_download_rinex   = p.Results.download_rinex;               % whether one should download the RINEX file
 parsed_input_args.svids               = string(p.Results.svid);                 % satellite PRNs
 parsed_input_args.sim_time            = p.Results.sim_time;                     % total simulation time (s)
 parsed_input_args.t_samp              = p.Results.t_samp;                       % sampling time (s)
-parsed_input_args.ipp_altitude        = p.Results.ipp_altitude;                      % IPP altitude in meters
+parsed_input_args.ipp_altitude        = p.Results.ipp_altitude;                 % IPP altitude in meters
 parsed_input_args.rinex_filename      = string(p.Results.rinex_filename);       % RINEX file path
 parsed_input_args.datetime            = p.Results.datetime;                     % datetime
 parsed_input_args.constellations      = lower(string(p.Results.constellation)); % constellations
 parsed_input_args.frequencies         = string(p.Results.frequency);            % frequencies
-parsed_input_args.severity            = string(p.Results.severity);            % severity
-parsed_input_args.is_plot             = p.Results.plot;
+parsed_input_args.severity            = string(p.Results.severity);             % severity
+parsed_input_args.is_plot             = p.Results.plot;                         % whether plot the ionospheric scintillation realization
+parsed_input_args.is_play             = p.Results.play;                         % whether play an animation of the receiver and satellite geometry
 
 end
 

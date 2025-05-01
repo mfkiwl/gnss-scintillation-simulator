@@ -1,50 +1,30 @@
 function sim_params = get_cte_sim_params()
-% get_sim_params Initialize a struct with constant simulation parameters.
+%GET_CTE_SIM_PARAMS Returns constant simulation parameters for the CPSSM model.
+%   sim_params = GET_CTE_SIM_PARAMS returns a struct containing fields:
+%     c               - Speed of light in vacuum (m/s)
+%     earth_radius    - Earth radius (m)
+%     all_constellations   - Supported constellations (array of strings)
+%     valid_constellations - Currently implemented constellations
+%     all_svid_prefix      - Satellite ID prefixes for each constellation
+%     all_freqs              - Frequency names and values for GPS, Galileo,
+%                              GLONASS, and BeiDou
+%     spectral             - Spectral parameters (U_ref, mu0_ref, p1, p2)
+%                            for strong, moderate, and weak scintillation
+%     freq_ref            - Reference frequency name and value for extrapolation
+%     geo_tsamp           - Geometry sampling time step (s)
+%     seed                - Default random seed for reproducibility
 %
-% Syntax:
-%   sim_params = get_cte_sim_params()
-%
-% Description:
-%   This function ...
-%
-%
-% Output
-%   Constant parameters:
-%       c               - (m/s, scalar) Speed of light in vacuum.
-%       earth_radius    - (m, scalar) Earth radius
-%   User-defined (or defaulted) parameters:
-%       frequency       - (string or string array) Frequencies.
-%       rx              - (struct) Receiver information:
-%                           .vel: rx velocity
-%                             .westeast: linear west-east velocity (m/s, eastward +, scalar)
-%                             .southnorth: linear south-north velocity (m/s, northward +, scalar)
-%                             .downup: linear down-up velocity (m/s, upward +, scalar)
-%       sim_time - (s, scalar) Total simulation time.
-%       dt              - (s, scalar) Sampling time.
-%       ipp_altitude      - (m, scalar) IPP altitude.
-%       drift_vel       - (m/s, struct) Ionosphere drift velocity.
-%                           .x: TODO
-%                           .y: TODO
-%                           .z: TODO
-%
-% Notes:
-%   - Check `parse_input_args()` to see the default values.
-%   - Note that not all user inputs are simulation parameters. Rather, some
-%   user input args are used just to produce a simulation parameter. That
-%   is why we have `parse_input_args()` and `get_sim_params()` separately.
-%
-% [1] Jiao, Yu, Charles Rino, Yu (Jade) Morton, and Charles Carrano. 
-%     “Scintillation Simulation on Equatorial GPS Signals for Dynamic
-%     Platforms,” 1644–57, 2017. https://doi.org/10.33012/2017.15258.
-% [2] Xu, Dongyang, Y.T. Jade Morton, Charles L. Rino, Charles S. Carrano,
-%     and Yu Jiao. “A Two-Parameter Multifrequency GPS Signal Simulator for
-%     Strong Equatorial Ionospheric Scintillation: Modeling and Parameter
-%     Characterization.” NAVIGATION 67, no. 1 (2020): 181–95.
-%     https://doi.org/10.1002/navi.350.
-% [3] Carrano, Charles S., and Charles L. Rino. “A Theory of Scintillation
-%     for Two-Component Power Law Irregularity Spectra: Overview and
-%     Numerical Results.” Radio Science 51, no. 6 (2016): 789–813.
-%     https://doi.org/10.1002/2015RS005903.
+% Example:
+%   sim_params = get_cte_sim_params();
+% 
+% Author:
+%   Rubem Vasconcelos Pacelli
+%   ORCID: https://orcid.org/0000-0001-5933-8565
+%   Email: rubem.engenharia@gmail.com
+% 
+%   Rodrigo de Lima Florindo
+%   ORCID: https://orcid.org/0000-0003-0412-5583
+%   Email: rdlfresearch@gmail.com
 %% Physical parameters
 sim_params.cte.c = 299792458;            % Speed of light in vacuum (m/s)
 sim_params.cte.earth_radius = 6378.137e3; % Earth radius (m)
@@ -103,6 +83,17 @@ sim_params.cte.spectral.weak.p2      = 3;
 % SEE: [2, Section 4]
 sim_params.cte.spectral.freq_ref.name  = sim_params.cte.all_freqs.name.gps(1);   % L1
 sim_params.cte.spectral.freq_ref.value = sim_params.cte.all_freqs.value.gps(1);  % L1
+
+%% Geometry sampling time
+% NOTE: this time sampling is used to obtain the geometric simulation of
+% the receiver and satellite propagation
+% TODO: At the moment, the sample time is set to one second. As it becomes
+% clearer what this value should be, you must reset it as either hardcoded
+% or from an input argument
+sim_params.geo_tsamp = 1;
+
+%% Seed
+sim_params.seed = 1;
 
 end
 
