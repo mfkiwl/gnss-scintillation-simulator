@@ -131,14 +131,14 @@ for i = 1:numel(sim_params.sats)
     out.(sat_constellation).scenario(end).rx = rx;
     % for this geometry propagation, get the ρF/veff for the reference
     % frequency
-    rhof_veff_ratio_ref = get_rhof_veff_ratio(rx, sat, sim_params);
+    rhof_veff_ratio_ref = get_scaling_param(rx, sat, sim_params);
 
     % for all valid frequencies for this satellite contellation
     for j = 1:numel(sim_params.freqs.(sat_constellation).name)
         freq_name = sim_params.freqs.(sat_constellation).name(j);
         freq_value = sim_params.freqs.(sat_constellation).value(j);
 
-        rhof_veff_ratio = freq_rhof_veff(sim_params, freq_value, rhof_veff_ratio_ref);
+        rhof_veff_ratio = extrapolate_scaling_param(sim_params, freq_value, rhof_veff_ratio_ref);
         
         % get scintillation realization
         [scint_field, norm_phase_psd, detrended_phase, mu] = ...

@@ -71,7 +71,7 @@ else
     error('Unknown operating system.');
 end
 
-[status,result]= system(['"',fullfile(cspsm_root_dir,'libs','Plots','Ispectrum',ispectrum_exe),'" ',IspecParams]);
+[status,result]= system(['"',fullfile(cspsm_root_dir,'libs','plots','Ispectrum',ispectrum_exe),'" ',IspecParams]);
 if status~=0
     error(result)
 end

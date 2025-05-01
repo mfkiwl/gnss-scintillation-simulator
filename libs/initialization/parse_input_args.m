@@ -265,8 +265,7 @@ unknown_keys = fieldnames(p.Unmatched);
 if ~isempty(unknown_keys)
     % Join them into a comma‑separated list
     list = strjoin(unknown_keys, ', ');
-    log.warning('', 'Ignored unknown key%s: %s', ...
-        plural(numel(unknown_keys)), list);
+    log.warning('', 'Ignored unknown key(s): %s', list);
 end
 
 %% Build the general_parameters struct from user input

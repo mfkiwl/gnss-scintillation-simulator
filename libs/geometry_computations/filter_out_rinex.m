@@ -30,8 +30,8 @@ constellation = string(constellation);
 rinex_fieldnames = cellfun(@string, fieldnames(rinex));
 fields_to_remove = ~ismember(lower(rinex_fieldnames), constellation);
 if all(fields_to_remove)
-    log.error('There is no constellation%s %s in this RINEX file.', ...
-        plural(numel(constellation)), strjoin(constellation, ", "));
+    log.error('There is no constellation(s) %s in this RINEX file.', ...
+        strjoin(constellation, ", "));
 end
 % remove undesired constellation fields
 rinex = rmfield(rinex, rinex_fieldnames(fields_to_remove));
