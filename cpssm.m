@@ -138,7 +138,8 @@ for i = 1:numel(sim_params.sats)
         freq_name = sim_params.freqs.(sat_constellation).name(j);
         freq_value = sim_params.freqs.(sat_constellation).value(j);
 
-        rhof_veff_ratio = extrapolate_scaling_param(sim_params, freq_value, rhof_veff_ratio_ref);
+        rhof_veff_ratio = extrapolate_scaling_param(sim_params, ...
+            freq_value, rhof_veff_ratio_ref);
         
         % get scintillation realization
         [scint_field, norm_phase_psd, detrended_phase, mu] = ...

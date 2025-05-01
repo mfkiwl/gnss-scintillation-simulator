@@ -1,51 +1,5 @@
-function [rx2sat_range, ipp2rx_range, veff] = PropGeomCalc(GPSTime, time_utc, eph, rx_traj_llh, rx_vel_ned, sat_traj_llh, sat_vel_ned, h_intercept,drift_vel_ned)
-%USAGE:   satGEOM_struct=PropGeomCalc(GPSTime,UT_time,eph,rx_traj_llh,h_intercept,rx_v,varargin)
-%
-%INPUTS:
-%   GPSTIme = [GPS week; seconds of week]
-%   UT_time    =  6 element date time for IGRF 
-%   eph             = RINEX navagation format ephemeris file
-%   rx_traj_llh    = station  [latitude (rad); longitude( rad); height (m)]
-%   Drift            = [downward,eastward,southward] drift mps  
-%
-%OUTPUTS:
-%   *************ecef Coordinates**********************************************************
-%   xsat_ecef, vsat_ecef = satellite state vector in ecef coordinates from spg4 (3XN)
-%   ************GPS Coordinates***********************************************************
-%   sat_llh            = satellite geodetic coordinates (3XN)
-%   ************Station TCS coordinates***************************************************
-%   sat_tcs,  vsat_tcs = satellite state vector in receiver tcs system at rx_traj_llh (3XN)
-%   sat_rng,  sat_rdot = satellite rang & range rate (=> sat_tcs) (3XN)
-%   sat_elev, sat_phi  = satellite elevation & true bearing (NX1)
-%   *************Propagation Reference Coordinates at penetration point*******************
-%   xyzp               = propagation coordinates with origin at h_intercept (3xN)
-%   thetap, phip       = polar angles wrt x  (phip  cw from y-axis (NX1)
-%                                          theta cw from x-axis
-%   rngp               = range from receiver to intercept point (Nx1)
-%   uk_xyzp         = unit vector pointing along propagation direction (3XN)
-%   s                     = unit magnetic field vector xp,yp,zp system (3xN)
-%   thetaB,psiB   = polar angles wrt xp (Nx1)
-%   vp                 = penetration point velocity <= satellite motion 
-%   vk                 = apparent velocity in measurement plane
-%   sat_utsec          = time (sec)
-%
-%Libraries:   GPS_CoordinateXforms IGRF_Compston 
-% References:
-% [1] Jiao, Yu, Dongyang Xu, Charles L. Rino, Yu T. Morton, and Charles S.
-%     Carrano. “A Multifrequency GPS Signal Strong Equatorial Ionospheric
-%     Scintillation Simulator: Algorithm, Performance, and 
-%     Characterization.” IEEE Transactions on Aerospace and Electronic 
-%     Systems 54, no. 4 (August 2018): 1947–65. 
-%     https://doi.org/10.1109/TAES.2018.2805232.
-% [2] Rino, Charles. The Theory of Scintillation with Applications in 
-%     Remote Sensing. John Wiley & Sons, 2011.
-% [3] Vasylyev, Dmytro, Yannick Béniguel, Wilken Volker, Martin Kriegel, 
-%     and Jens Berdermann. “Modeling of Ionospheric Scintillation.” 
-%     Journal of Space Weather and Space Climate 12 (2022): 22.
-%Author:
-%Charles Rino
-%Rino Consulting
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%VERSION: February 13, 2016%%%%%%%%%%%%%%%%%%%%
+function [rx2sat_range, ipp2rx_range, veff] = get_veff(time_utc, rx_traj_llh, rx_vel_ned, sat_traj_llh, sat_vel_ned, h_intercept,drift_vel_ned)
+
 
 %% Get satellite trajectory and velocity in ENU (origin in the receiver)
 %{
@@ -225,4 +179,4 @@ thetaB=thetaB+pi/2;
 
 % SEE: (4.48) in Rino's book
 veff=sqrt((C.*vky.^2-B.*vky.*vkz+A.*vkz.^2)./(A.*C-B.^2/4));
-return
+end
