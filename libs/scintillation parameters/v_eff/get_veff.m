@@ -1,5 +1,18 @@
-function [rx2sat_range, ipp2rx_range, veff] = get_veff(time_utc, rx_traj_llh, rx_vel_ned, sat_traj_llh, sat_vel_ned, h_intercept,drift_vel_ned)
-
+function [rx2sat_range, ipp2rx_range, veff] = get_veff(time_utc, ...
+    rx_traj_llh, rx_vel_ned, sat_traj_llh, sat_vel_ned, h_intercept, ...
+    drift_vel_ned)
+% References:
+% [1] Jiao, Yu, Dongyang Xu, Charles L. Rino, Yu T. Morton, and Charles S.
+%     Carrano. “A Multifrequency GPS Signal Strong Equatorial Ionospheric
+%     Scintillation Simulator: Algorithm, Performance, and 
+%     Characterization.” IEEE Transactions on Aerospace and Electronic 
+%     Systems 54, no. 4 (August 2018): 1947–65. 
+%     https://doi.org/10.1109/TAES.2018.2805232.
+% [2] Rino, Charles. The Theory of Scintillation with Applications in 
+%     Remote Sensing. John Wiley & Sons, 2011.
+% [3] Vasylyev, Dmytro, Yannick Béniguel, Wilken Volker, Martin Kriegel, 
+%     and Jens Berdermann. “Modeling of Ionospheric Scintillation.” 
+%     Journal of Space Weather and Space Climate 12 (2022): 22.
 
 %% Get satellite trajectory and velocity in ENU (origin in the receiver)
 %{
@@ -112,9 +125,9 @@ ipp2rx_range  =sqrt(rx_traj_des_ipp(1,:).^2+rx_traj_des_ipp(2,:).^2+rx_traj_des_
 uk_xyzp  = rx_traj_des_ipp./repmat(ipp2rx_range,3,1);
 % Propagation angles
 % NOTE: See figure 2 in [1]
-% ϕ
+% θ TODO: check the angles
 ipp2rx_east2south_angle = atan2(sqrt(rx_traj_des_ipp(2,:).^2+rx_traj_des_ipp(3,:).^2),rx_traj_des_ipp(1,:));
-% θ
+% ϕ
 ipp2rx_to_down_angle   = atan2(rx_traj_des_ipp(3,:),rx_traj_des_ipp(2,:));
 
 %% satellite signal scan velocity at the IPP

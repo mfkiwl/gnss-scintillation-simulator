@@ -34,9 +34,9 @@ function rhof_veff_ratio_ref = get_scaling_param(rx, sat, sim_params)
 %   Email: rdlfresearch@gmail.com
 
 %% Initalization
-% get receiver LLA (latitude, longitude, altitude) trajectory and UTC time
+% get receiver LLA (latitude [deg], longitude [deg], altitude [m]) trajectory and UTC time
 [rx_traj_lla, rx_vel_ned, time_utc] = states(rx, 'CoordinateFrame','geographic');
-% get satellite LLA (latitude, longitude, altitude) trajectory
+% get satellite LLA (latitude [deg], longitude [deg], altitude [m]) trajectory
 [sat_traj_lla, sat_vel_ned, ~]= states(sat, 'CoordinateFrame','geographic');
 % drift velocity
 drift_vel_ned = sim_params.drift_vel_ned;
@@ -46,6 +46,10 @@ ipp_altitude = sim_params.ipp_altitude;
 freq_ref = sim_params.cte.spectral.freq_ref.value;
 % spped of light
 c = sim_params.cte.c;
+
+% convert LLA from deg to rad
+rx_traj_lla(1:2,:)  = rx_traj_lla(1:2,:)*pi/180;
+sat_traj_lla(1:2,:) = sat_traj_lla(1:2,:)*pi/180;
 
 %% Compute the propagation geometry and IPP parameters
 [rx2sat_range, ipp2rx_range, veff] = get_veff( ...
