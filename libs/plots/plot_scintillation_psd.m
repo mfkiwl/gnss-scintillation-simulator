@@ -1,4 +1,4 @@
-function plot_scintillation_realization(scint_realization, severity, cspsm_root_dir)
+function plot_scintillation_psd(cspsm_root_dir, out)
 % plot_all_amp_phase_psds
 %
 % Syntax:
@@ -54,31 +54,36 @@ function plot_scintillation_realization(scint_realization, severity, cspsm_root_
 %   ORCID: https://orcid.org/0000-0003-0412-5583
 %   Email: rdlfresearch@gmail.com
 
+%% Initalize
+severity = out.severity;
+
 %% PSD of amplitude and phase of the ionospheric scintllation
 % all constellation names
-doppler_frequency = scint_realization.doppler_frequency_support;
-constellations = setxor(string(fieldnames(scint_realization)), ["doppler_frequency_support", "time_utc"]);
+doppler_frequency = out.doppler_frequency_support;
+constellations = setxor(string(fieldnames(out)), ...
+    ["doppler_frequency_support", "time_utc", "satelliteScenario", "severity"]);
 for constellation = constellations
     % Frequency names for this constellation
-    freq_names = string(fieldnames(scint_realization.(constellation).spectral)).';
-    for i = 1:numel(scint_realization.(constellation).scenario)
+    freq_names = string(fieldnames(out.(constellation).spectral)).';
+    % for all rx-sat scenario
+    for i = 1:numel(out.(constellation).scenario)
         % Create new figure for each scenario
         fig = figure('Name', sprintf('%s Scintillation - Intensity & Phase PSDs', severity), 'Position',[50,50,1400,550]);
         set(fig, 'DefaultTextFontName', 'Helvetica');
         tiledlayout(2, numel(freq_names), "TileSpacing", "compact");
         sgtitle(sprintf('Scintillation PSD Analysis: Intensity & Phase (%s) for %s satellite %s', ...
-            severity, upper(scint_realization.(constellation).scenario(i).sat.OrbitPropagator), ...
-            scint_realization.(constellation).scenario(i).sat.Name), 'FontSize', 30, ...
+            severity, upper(out.(constellation).scenario(i).sat.OrbitPropagator), ...
+            out.(constellation).scenario(i).sat.Name), 'FontSize', 30, ...
             'FontName', 'Helvetica');
         for j = 1:numel(freq_names)
             % get parameters
             freq_name = freq_names(j);
-            spectral_params = scint_realization.(constellation).spectral.(freq_name);
-            mu = scint_realization.(constellation).scenario(i).(freq_name).mu;
-            norm_phase_psd = scint_realization.(constellation).scenario(i).(freq_name).norm_phase_psd;
-            detrended_phase = scint_realization.(constellation).scenario(i).(freq_name).detrended_phase;
-            scint_field = scint_realization.(constellation).scenario(i).(freq_name).scint_field;
-            rhof_veff_ratio = scint_realization.(constellation).scenario(i).(freq_name).rhof_veff_ratio;
+            spectral_params = out.(constellation).spectral.(freq_name);
+            mu = out.(constellation).scenario(i).(freq_name).mu;
+            norm_phase_psd = out.(constellation).scenario(i).(freq_name).norm_phase_psd;
+            detrended_phase = out.(constellation).scenario(i).(freq_name).detrended_phase;
+            scint_field = out.(constellation).scenario(i).(freq_name).scint_field;
+            rhof_veff_ratio = out.(constellation).scenario(i).(freq_name).rhof_veff_ratio;
             % Compute one-sided Doppler frequencies
             nfft = length(doppler_frequency);
             freq_idx_1sided = (nfft/2 + 2) : nfft;
@@ -120,8 +125,8 @@ for constellation = constellations
             plot(partial_doppler_freq, 10*log10(intensity_psd_1sided_post), 'LineWidth', 1.2);
             plot(partial_doppler_freq, 10*log10(Imu_interp), 'r--', 'LineWidth', 1.2);
             set(gca, 'XScale', 'log', 'FontName', 'Helvetica', 'FontSize', 20);
-            xlabel('Doppler Frequency (Hz)', 'FontName', 'Helvetica');
-            ylabel('Intensity PSD [dB]', 'FontName', 'Helvetica');
+            xlabel('Doppler Frequency (Hz)', 'FontName', 'Helvetica', 'FontSize', 10);
+            ylabel('Intensity PSD [dB]', 'FontName', 'Helvetica', 'FontSize', 10);
             title(sprintf('%s %s | S_4: Th. %.3f, Exp. %.3f | ρ_F/v_{eff} = %.2f', severity, freq_name, theoretical_s4_val, experimental_s4_val, rhof_veff_ratio), 'FontSize', 20, 'FontName', 'Helvetica');
             legend( ...
                 'Post-Propagation PSD', ...
@@ -156,6 +161,10 @@ for constellation = constellations
         end
     end
 end
+
+
+
+% -------------------------------------------------------------------------
 
     function psd_1sided = compute_psd_1sided(real_signal, nfft, doppler_freq, psd_idx_1sided)
         % Compute the one-sided power spectral density function (PSD)

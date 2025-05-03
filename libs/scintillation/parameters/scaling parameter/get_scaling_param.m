@@ -35,9 +35,9 @@ function rhof_veff_ratio_ref = get_scaling_param(rx, sat, sim_params)
 
 %% Initalization
 % get receiver LLA (latitude [deg], longitude [deg], altitude [m]) trajectory and UTC time
-[rx_traj_lla, rx_vel_ned, time_utc] = states(rx, 'CoordinateFrame','geographic');
+[rx_traj_lla_deg, rx_vel_ned, time_utc] = states(rx, 'CoordinateFrame','geographic');
 % get satellite LLA (latitude [deg], longitude [deg], altitude [m]) trajectory
-[sat_traj_lla, sat_vel_ned, ~]= states(sat, 'CoordinateFrame','geographic');
+[sat_traj_lla_deg, sat_vel_ned, ~]= states(sat, 'CoordinateFrame','geographic');
 % drift velocity
 drift_vel_ned = sim_params.drift_vel_ned;
 % IPP altitude
@@ -47,9 +47,9 @@ freq_ref = sim_params.cte.spectral.freq_ref.value;
 % spped of light
 c = sim_params.cte.c;
 
-% convert LLA from deg to rad
-rx_traj_lla(1:2,:)  = rx_traj_lla(1:2,:)*pi/180;
-sat_traj_lla(1:2,:) = sat_traj_lla(1:2,:)*pi/180;
+% convert lat and long from deg to rad
+rx_traj_lla  = [rx_traj_lla_deg(1:2,:)*pi/180; rx_traj_lla_deg(3,:)];
+sat_traj_lla = [sat_traj_lla_deg(1:2,:)*pi/180; sat_traj_lla_deg(3,:)];
 
 %% Compute the propagation geometry and IPP parameters
 [rx2sat_range, ipp2rx_range, veff] = get_veff( ...
