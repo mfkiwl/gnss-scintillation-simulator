@@ -179,7 +179,7 @@ out = get_scintillation(sim_params);
 %% Plot output
 if parsed_argins.is_plot
     plot_scintillation_psd(cpssm_root_dir, out);
-    % plot_scintillation_time_series(out);
+    plot_scintillation_time_series(out);
 end
 
 %% Play satellite-receiver scenarios
