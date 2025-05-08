@@ -1,4 +1,4 @@
-function plot_scintillation_time_series(out, sim_params)
+function plot_scintillation_time_series(out)
 % plot_all_magnitude_phase
 %
 % Syntax:
@@ -31,11 +31,10 @@ function plot_scintillation_time_series(out, sim_params)
 
 %% Initialization
 severities = out.severity;
-time_vector = 0:sim_params.t_samp:sim_params.sim_time-sim_params.t_samp;
 
 %% Plot
 constellations = setxor(string(fieldnames(out)), ...
-    ["doppler_frequency_support", "time_utc", "satelliteScenario", "severity"]);
+    ["doppler_frequency_support", "satelliteScenario", "severity"]);
 % for all constellation
 for constellation = constellations
     % Frequency names for this constellation
@@ -59,11 +58,11 @@ for constellation = constellations
             for j = 1:numel(freq_names)
                 freq_name = freq_names(j);
                 scint_field = out.(constellation).scenario(i).(freq_name).scint_field;
-                truncated_scint_field = scint_field(1:length(time_vector));
                 % Compute S4
-                s4_values(j) = get_S4(abs(truncated_scint_field).^2);
+                s4_values(j) = get_S4(abs(scint_field.Variables).^2);
 
-                plot(time_vector, 10*log10(abs(truncated_scint_field).^2), 'LineWidth', 1.2);
+                mag_timeseries_dB = varfun(@(x) 10*log10(abs(x).^2), scint_field);
+                plot(mag_timeseries_dB.Time, mag_timeseries_dB.Fun_Var1, 'LineWidth', 2.4);
                 set(gca, 'FontName', 'Helvetica', 'FontSize', 20);
                 legend_labels{j} = sprintf('%s (S_4=%.3f)', freq_name, s4_values(j));
             end
@@ -80,10 +79,10 @@ for constellation = constellations
             for j = 1:numel(freq_names)
                 freq_name = freq_names(j);
                 scint_field = out.(constellation).scenario(i).(freq_name).scint_field;
-                truncated_scint_field = scint_field(1:length(time_vector));
-                phase_time_series = get_corrected_phase(truncated_scint_field);
-                plot(time_vector, phase_time_series, 'LineWidth', 1.2);
+                phase_time_series = get_corrected_phase(scint_field.Var1);
+                plot(scint_field.Time, phase_time_series, 'LineWidth', 2.4);
             end
+            set(gca, 'FontName', 'Helvetica', 'FontSize', 20);
             xlabel('Time (s)', 'FontName', 'Helvetica', 'FontSize', 20);
             ylabel('Phase [rad]', 'FontName', 'Helvetica', 'FontSize', 20);
             title(sprintf('%s - Phase Evolution', severity), 'FontSize', 30, 'FontName', 'Helvetica');

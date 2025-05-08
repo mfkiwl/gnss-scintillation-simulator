@@ -35,6 +35,8 @@ function rhof_veff_ratio_ref = get_scaling_param(rx, sat, sim_params)
 
 %% Initalization
 % get receiver LLA (latitude [deg], longitude [deg], altitude [m]) trajectory and UTC time
+% NOTE: `time_utc` sampling time is defined be `t_samp_geo`, which is an
+% internal parameter
 [rx_traj_lla_deg, rx_vel_ned, time_utc] = states(rx, 'CoordinateFrame','geographic');
 % get satellite LLA (latitude [deg], longitude [deg], altitude [m]) trajectory
 [sat_traj_lla_deg, sat_vel_ned, ~]= states(sat, 'CoordinateFrame','geographic');

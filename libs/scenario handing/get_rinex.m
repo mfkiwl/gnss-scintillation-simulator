@@ -1,4 +1,4 @@
-function [trange, rinex] = get_rinex(cspsm_root_dir, parsed_argins)
+function [temporal_support, rinex] = get_rinex(cspsm_root_dir, parsed_argins)
 %GET_RINEX Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -8,6 +8,7 @@ is_download_rinex = parsed_argins.is_download_rinex;
 dtime             = parsed_argins.datetime;
 rinex_filename    = parsed_argins.rinex_filename;
 sim_time          = parsed_argins.sim_time;
+t_samp            = parsed_argins.t_samp;
 
 %% get RINEX from user inputs
 if is_download_rinex
@@ -34,8 +35,7 @@ else
     dtime = datetime(y, m, d, h, mn, s);
 end
 
-% define simulation time range
-trange.start = dtime;
-trange.end = dtime + seconds(sim_time);
+% define simulation temporal support for the scintillation time series
+temporal_support = dtime:seconds(t_samp):dtime+seconds(sim_time);
 end
 

@@ -8,12 +8,9 @@ rx = sim_params.satelliteScenario.Platforms(1);
 % - U and μ₀: dependent only on the frequency (computed via extrapolation)
 % - p₁ and p₂: independent
 % - Doppler frequency: dependent only on t_samp and FFT samples
-% - UTC time: independent
 % Frequency support where the PSD are plotted
 nfft = nicefftnum(sim_params.sim_time / sim_params.t_samp);
 out.doppler_frequency_support = (-nfft/2 : nfft/2-1) / (nfft * sim_params.t_samp);
-% UTC timestamps of the propagation geometry
-[~, ~, out.time_utc] = states(rx);
 for constellation = sim_params.constellations
     % initialize a 0x0 struct array which will store geometric-related
     % outputs. Each, struct scalar in this array is related to a sat-rx
@@ -50,26 +47,34 @@ for sat = sim_params.satelliteScenario.Satellites
             freq_value, rhof_veff_ratio_ref);
         
         % get scintillation realization
-        [scint_field, norm_phase_psd, detrended_phase, mu] = ...
-            get_scintillation_time_series( ...
-            out.doppler_frequency_support, ...
-            out.(constellation).spectral.(freq_name), ...
+        [scint_field, theo_phase_psd, detrended_phase, mu, ...
+            postprop_amplitude, postprop_phase, ...
+            intensity_psd_1sided_post, s4, ...
+            preprop_phase_psd_1sided, postprop_phase_psd_1sided] = ...
+            get_scintillation_realization( ...
+            sim_params, ...
+            out, ...
+            constellation, ...
+            freq_name, ...
             rhof_veff_ratio, ...
-            nfft, ...
-            sim_params.seed);
-
-        % compute amplitude and phase time series of the received
-        % scintillation signal
-        amplitude = abs(scint_field.');
-        phase = unwrap(angle(scint_field.'));
+            nfft);
         
-        % outputs
-        out.(sat_constellation).scenario(end).(freq_name).scint_field = scint_field;
-        out.(sat_constellation).scenario(end).(freq_name).amplitude = amplitude;
-        out.(sat_constellation).scenario(end).(freq_name).phase = phase;
-        out.(sat_constellation).scenario(end).(freq_name).detrended_phase = detrended_phase;
+        %% outputs
+        % frequency support
         out.(sat_constellation).scenario(end).(freq_name).mu = mu;
-        out.(sat_constellation).scenario(end).(freq_name).norm_phase_psd = norm_phase_psd;
+        out.(sat_constellation).scenario(end).(freq_name).complex_field_postprop = scint_field;
+        % Computed S4
+        out.(sat_constellation).scenario(end).(freq_name).S4 = s4;
+        % amplitude
+        out.(sat_constellation).scenario(end).(freq_name).amplitude.timeseries_postprop = postprop_amplitude;
+        out.(sat_constellation).scenario(end).(freq_name).amplitude.psd_postprop = intensity_psd_1sided_post;
+        % phase
+        out.(sat_constellation).scenario(end).(freq_name).phase.timeseries.postprop = postprop_phase;
+        out.(sat_constellation).scenario(end).(freq_name).phase.timeseries.preprop = detrended_phase;
+        out.(sat_constellation).scenario(end).(freq_name).phase.psd.theo_phase = theo_phase_psd;
+        out.(sat_constellation).scenario(end).(freq_name).phase.psd.preprop_1sided = preprop_phase_psd_1sided;
+        out.(sat_constellation).scenario(end).(freq_name).phase.psd.postprop_1sided = postprop_phase_psd_1sided;
+        % ρF/veff
         out.(sat_constellation).scenario(end).(freq_name).rhof_veff_ratio = rhof_veff_ratio;
     end
 end

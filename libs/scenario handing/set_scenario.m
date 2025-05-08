@@ -4,13 +4,13 @@ function sim_params = set_scenario(log, cpssm_root_dir, ...
 %   Detailed explanation goes here
 
 %% get RINEX file
-[sim_params.time_range, rinex] = get_rinex(cpssm_root_dir, parsed_argins);
+[sim_params.temporal_support, rinex] = get_rinex(cpssm_root_dir, parsed_argins);
 
 %% Get line-of-sight (LOS) satellites
 
 % create a satellite scenario
-sat_scen = satelliteScenario(sim_params.time_range.start, ...
-    sim_params.time_range.end, sim_params.geo_tsamp);
+sat_scen = satelliteScenario(sim_params.temporal_support(1), ...
+    sim_params.temporal_support(end), sim_params.t_samp_geo);
 
 % add all satellites from the RINEX ephemerides in the scenario
 satellite(sat_scen, rinex);
@@ -28,7 +28,7 @@ satellite(sat_scen, rinex);
 rx_traj = geoTrajectory( ...
     [parsed_argins.rx_origin; parsed_argins.rx_origin], ...
     [0 sim_params.sim_time], ...
-    'SampleRate', parsed_argins.t_samp);
+    'SampleRate', sim_params.t_samp_geo);
 
 % add receiver in the scenario as a moving platform
 platform(sat_scen, rx_traj, 'Receiver');
@@ -48,9 +48,7 @@ filtered_los_sats_params = get_filtered_los_sat_params(log, sim_params, ...
 
 % get only the satellites in line-of-sight with the receiver
 is_los_sat = ismember(sat_scen.Satellites.Name, filtered_los_sats_params.Source);
-for nonlos_sat = sat_scen.Satellites(~is_los_sat)
-    delete(nonlos_sat)
-end
+delete(sat_scen.Satellites(~is_los_sat))
 % set scenario
 sim_params.satelliteScenario = sat_scen;
 end

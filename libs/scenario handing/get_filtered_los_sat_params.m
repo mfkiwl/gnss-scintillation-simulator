@@ -6,21 +6,22 @@ all_constellations = sim_params.cte.all_constellations;
 % sim_params_svids = sim_params.svids;
 sim_params_constellations = sim_params.constellations;
 all_svid_prefix = sim_params.cte.all_svid_prefix;
-trange = sim_params.time_range;
+time_start = sim_params.temporal_support(1);
+time_end = sim_params.temporal_support(end);
 
 %% Get constellation-filtered LOS satellites
 filtered_ids = all_svid_prefix(contains(all_constellations, sim_params_constellations));
 
 filtered_los_sat_params = los_sats_params(contains(los_sats_params.Source, filtered_ids), :);
-trange.start.Format = 'HH:mm:ss';
-trange.end.Format = 'HH:mm:ss';
+time_start.Format = 'HH:mm:ss';
+time_end.Format = 'HH:mm:ss';
 
-if any(filtered_los_sat_params.Duration < seconds(trange.end - trange.start))
-    discarted_sats = filtered_los_sat_params(filtered_los_sat_params.Duration < seconds(trange.end - trange.start), :);
+if any(filtered_los_sat_params.Duration < seconds(time_end - time_start))
+    discarted_sats = filtered_los_sat_params(filtered_los_sat_params.Duration < seconds(time_end - time_start), :);
     for i = height(discarted_sats)
-        log.info('The satellite %s has been discated as it lost LOS within the time range [%s, %s]', discarted_sats(i,:).Source, trange.start, trange.end);
+        log.info('The satellite %s was in LOS with the receiver, but its observation window of did not include the whole interval [%s, %s] and was therefore discarded.', discarted_sats(i,:).Source, time_start, time_end);
     end
-    filtered_los_sat_params = filtered_los_sat_params(filtered_los_sat_params.Duration == seconds(trange.end - trange.start), :);
+    filtered_los_sat_params = filtered_los_sat_params(filtered_los_sat_params.Duration == seconds(time_end - time_start), :);
 end
 
 %% Get PRN-filtered LOS satellites

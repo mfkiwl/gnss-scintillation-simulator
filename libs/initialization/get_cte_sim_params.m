@@ -11,7 +11,7 @@ function sim_params = get_cte_sim_params()
 %     spectral             - Spectral parameters (U_ref, mu0_ref, p1, p2)
 %                            for strong, moderate, and weak scintillation
 %     freq_ref            - Reference frequency name and value for extrapolation
-%     geo_tsamp           - Geometry sampling time step (s)
+%     t_samp_geo           - Geometry sampling time step (s)
 %     seed                - Default random seed for reproducibility
 %
 % Example:
@@ -90,7 +90,7 @@ sim_params.cte.spectral.freq_ref.value = sim_params.cte.all_freqs.value.gps(1); 
 % TODO: At the moment, the sample time is set to one second. As it becomes
 % clearer what this value should be, you must reset it as either hardcoded
 % or from an input argument
-sim_params.geo_tsamp = 1;
+sim_params.t_samp_geo = 1;
 
 %% Seed
 sim_params.seed = 1;

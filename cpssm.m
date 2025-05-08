@@ -125,8 +125,9 @@ function out = cpssm(varargin)
 %   'sim_time'        - (optional, seconds, scalar) Total simulation time.
 %                       Default: 300
 %
-%   't_samp'          - (optional, seconds, scalar) Sampling time.
-%                       Default: 1
+%   't_samp'          - (optional, seconds, scalar) Sampling time of the
+%                       scintillation time series realization.
+%                       Default: 10e-3
 %
 %   'ipp_altitude'      - (optional, meters, scalar) Ionospheric piercing
 %                       point (IPP) altitude.
@@ -178,7 +179,7 @@ out = get_scintillation(sim_params);
 %% Plot output
 if parsed_argins.is_plot
     plot_scintillation_psd(cpssm_root_dir, out);
-    plot_scintillation_time_series(out, sim_params);
+    % plot_scintillation_time_series(out);
 end
 
 %% Play satellite-receiver scenarios
