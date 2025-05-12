@@ -41,6 +41,7 @@ default_drift_vel_ned   = [0 125 0];                            % Ionosphere dri
 default_severity        = "strong";                             % Ionospheric scintllation severity
 default_is_plot         = false;                                % Whether plot the ionospheric scintillation realization
 default_is_play         = false;                                % Whether play an animation of the receiver and satellite geometry
+default_seed            = 1;                                    % Default seed
 
 %% Parsing phase 0: resolve the logging before anything else
 
@@ -80,6 +81,9 @@ addParameter(p, 'plot',   default_is_plot, ...
 % Add play parameter: must be a logical scalar
 addParameter(p, 'play',   default_is_play, ...
     @(x) isscalar(x) && islogical(x));
+% Add seed parameter: must be an integer scalar
+addParameter(p, 'seed',   default_seed, ...
+    @(x) isscalar(x) && (mod(x,1) == 0));
 % Add rx_origin parameter: must be a numeric 3-element vector
 addParameter(p, 'rx_origin',   default_rx_origin, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
@@ -150,6 +154,7 @@ parsed_input_args.frequencies         = string(p.Results.frequency);            
 parsed_input_args.severity            = string(p.Results.severity);             % severity
 parsed_input_args.is_plot             = p.Results.plot;                         % whether plot the ionospheric scintillation realization
 parsed_input_args.is_play             = p.Results.play;                         % whether play an animation of the receiver and satellite geometry
+parsed_input_args.seed                = p.Results.seed;                         % simulation seed
 
 end
 

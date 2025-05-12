@@ -92,8 +92,5 @@ sim_params.cte.spectral.freq_ref.value = sim_params.cte.all_freqs.value.gps(1); 
 % or from an input argument
 sim_params.t_samp_geo = 1;
 
-%% Seed
-sim_params.seed = 1;
-
 end
 

@@ -50,6 +50,9 @@ sim_params.severity = parsed_argin.severity;
 %% Simulation time
 sim_params.sim_time = parsed_argin.sim_time;
 
+%% Seed
+sim_params.seed = parsed_argin.seed;
+
 %% Scintillation sampling time
 % NOTE: this sampling time is the value used to obtain the scintillation
 % time series realization as well as its intensity and phase PSD

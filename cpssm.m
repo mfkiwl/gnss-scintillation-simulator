@@ -96,7 +96,7 @@ function out = cpssm(varargin)
 %                       section.
 %                       Default: "all"
 %
-%   'svid'            -  (optional, string or string array) Satellite SVID.
+%   'svid'            - (optional, string or string array) Satellite SVID.
 %                       If the user knows the exact satellites availabe for
 %                       the desired datetime, they can input their PRNs.
 %                       For instance, for 24-Jun-2021 14:00:00, the user
@@ -124,6 +124,10 @@ function out = cpssm(varargin)
 %
 %   'sim_time'        - (optional, seconds, scalar) Total simulation time.
 %                       Default: 300
+%
+%   'seed'            - (optional, integer scalar) Seed used to generate
+%                       the random scintillation realization
+%                       Default: 1
 %
 %   't_samp'          - (optional, seconds, scalar) Sampling time of the
 %                       scintillation time series realization.
