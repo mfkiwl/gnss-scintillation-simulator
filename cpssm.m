@@ -168,7 +168,7 @@ function out = cpssm(varargin)
 addpath(genpath(fullfile(cpssm_root_dir,'libs')));
 addpath(genpath(fullfile(cpssm_root_dir,'cache')));
 
-[parsed_argins,sim_params,log] = initialize_cpssm(cpssm_root_dir, varargin);
+[parsed_argins, sim_params, log] = initialize_cpssm(cpssm_root_dir, varargin);
 
 %% Scenario
 sim_params = set_scenario(log, cpssm_root_dir, sim_params, parsed_argins);
