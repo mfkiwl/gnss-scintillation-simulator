@@ -137,7 +137,7 @@ propagated_complex_field = get_propagated_field(mu, detrended_phase_realization)
 % compute amplitude and phase time series of the received
 % scintillation signal
 postprop_amplitude = abs(propagated_complex_field);
-postprop_phase = unwrap(angle(propagated_complex_field));
+postprop_phase = get_corrected_phase(propagated_complex_field);
 
 %% Postpropagated PSD of the amplitude (Intensity PSD)
 % SEE: `plot(mu(mu>0), 10*log10(intensity_psd_1sided_post))`

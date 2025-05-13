@@ -57,7 +57,7 @@ for constellation = constellations
             hold on;
             for j = 1:numel(freq_names)
                 freq_name = freq_names(j);
-                scint_field = out.(constellation).scenario(i).(freq_name).scint_field;
+                scint_field = out.(constellation).scenario(i).(freq_name).complex_field_postprop;
                 % Compute S4
                 s4_values(j) = get_S4(abs(scint_field.Variables).^2);
 
@@ -78,7 +78,7 @@ for constellation = constellations
             hold on;
             for j = 1:numel(freq_names)
                 freq_name = freq_names(j);
-                scint_field = out.(constellation).scenario(i).(freq_name).scint_field;
+                scint_field = out.(constellation).scenario(i).(freq_name).complex_field_postprop;
                 phase_time_series = get_corrected_phase(scint_field.Var1);
                 plot(scint_field.Time, phase_time_series, 'LineWidth', 2.4);
             end
