@@ -1,28 +1,4 @@
 function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, all_constellation, varargin)
-% parse_input_args Returns a struct with general simulation parameters.
-%
-% Syntax:
-%   general_parameters = parse_input_args(varargin)
-%
-% Description:
-%   Parses the raw name–value pair arguments provided by the user and
-%   returns a single struct containing either the user-supplied values
-%   or appropriate defaults. This function’s primary purpose is to
-%   validate all inputs and ensure there are no conflicting or invalid
-%   parameter combinations before the simulation begins. The input arg
-%   parsing is accomplished in two steps. First, the independent arguments
-%   are parsed, thus checking any inconsistency. Second, the remaining and
-%   dependent arguments are analyzed; the valid values for the dependent
-%   arguments depend on the independent argument values.
-%
-% Author:
-%   Rodrigo de Lima Florindo
-%   ORCID: https://orcid.org/0000-0003-0412-5583
-%   Email: rdlfresearch@gmail.com
-%
-%   Rubem Vasconcelos Pacelli
-%   ORCID: https://orcid.org/0000-0001-5933-8565
-%   Email: rubem.engenharia@gmail.com
 
 %% Define default values
 default_rx_origin       = [-23.2198 -45.8916  59.6780];         % [latitude (deg); longitude (deg); altitude (m)] -> São José dos Campos

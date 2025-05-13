@@ -126,7 +126,12 @@ function out = cpssm(varargin)
 %                       Default: 300
 %
 %   'seed'            - (optional, integer scalar) Seed used to generate
-%                       the random scintillation realization
+%                       the random scintillation realization. The seed
+%                       value should change per satellite as the
+%                       environment in which the scintillation is developed
+%                       must not be the same. However, if you set the same
+%                       input arguments, pasing the same seed guarantees
+%                       reproducibility of the CPSSM output.
 %                       Default: 1
 %
 %   't_samp'          - (optional, seconds, scalar) Sampling time of the
@@ -178,7 +183,7 @@ addpath(genpath(fullfile(cpssm_root_dir,'cache')));
 sim_params = set_scenario(log, cpssm_root_dir, sim_params, parsed_argins);
 
 %% Scintillation realization
-out = get_scintillation(sim_params);
+out = get_scintillation(log, sim_params);
 
 %% Plot output
 if parsed_argins.is_plot

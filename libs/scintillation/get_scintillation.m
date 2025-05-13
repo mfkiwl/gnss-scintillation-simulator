@@ -1,4 +1,4 @@
-function out = get_scintillation(sim_params)
+function out = get_scintillation(log, sim_params)
 
 %% Initialize
 rx = sim_params.satelliteScenario.Platforms(1);
@@ -29,6 +29,10 @@ end
 %% Compute the geometric related output
 % for all filtered LOS sat (of a given contellation)
 for sat = sim_params.satelliteScenario.Satellites
+    % For each satellite, a different seed should be used
+    sim_params.seed = sim_params.seed + 1;
+    log.info('For the satellite %s, the seed used to develop the scintillation is %d', ...
+        sat.Name, sim_params.seed);
     % get LOS sat and constellation name
     sat_constellation = sat.OrbitPropagator;
     % save sat and receiver to output
