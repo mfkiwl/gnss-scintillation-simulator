@@ -76,7 +76,7 @@ if status~=0
     error(result)
 end
 %NOTE: .dat and .log files are written in pwd
-fid=fopen(fullfile(cspsm_root_dir,'ispectrum.log'),'r');
+fid=fopen(fullfile('ispectrum.log'),'r');
 logtxt=textscan(fid,'%s');
 if ~isempty(varargin)
     fprintf('Ustar      U1        U2        p1       p2     mu0   mu_o  mu_i      S4    sigP    sigNfc num \n')
@@ -92,7 +92,7 @@ if mu0>=1
 else
     Cpp=U/mu0^(p2-p1);
 end
-data=importdata(fullfile(cspsm_root_dir,'ispectrum.dat'));
+data=importdata(fullfile('ispectrum.dat'));
 [~,ndata]=size(data);
 if ndata~=3
     fclose('all');
@@ -103,6 +103,6 @@ Imu=data(:,2);
 nstp=data(:,3);
 end
 fclose('all');
-delete(fullfile(cspsm_root_dir,'ispectrum.dat'));
-delete(fullfile(cspsm_root_dir,'ispectrum.log'));
+delete(fullfile('ispectrum.dat'));
+delete(fullfile('ispectrum.log'));
 return
