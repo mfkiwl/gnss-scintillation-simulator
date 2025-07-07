@@ -49,6 +49,15 @@ filtered_los_sats_params = get_filtered_los_sat_params(log, sim_params, ...
 % get only the satellites in line-of-sight with the receiver
 is_los_sat = ismember(sat_scen.Satellites.Name, filtered_los_sats_params.Source);
 delete(sat_scen.Satellites(~is_los_sat))
+% define 3D model of the satellite object
+modelFile = which("SmallSat.glb");
+if ~isempty(modelFile)
+    for k = 1:numel(sat_scen.Satellites)
+        sat_scen.Satellites(k).Visual3DModel      = modelFile;    % GLB model
+        sat_scen.Satellites(k).Visual3DModelScale = 5e5;          % scale up to 100 km so it’s visible
+        sat_scen.Satellites(k).MarkerSize         = 0.1;          % hide the blue dot
+    end
+end
 % set scenario
 sim_params.satelliteScenario = sat_scen;
 end
