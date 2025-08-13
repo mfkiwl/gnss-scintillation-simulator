@@ -24,22 +24,26 @@ end
 
 %% resolve unavailability of GLONASS and Beidou
 
-idx = ismember(input_constellations, ["glonass", "beidou", "zqss", "navic"]);
-msg = ['At the moment the GLONASS, Beidou, QZSS, and NavIC are not implemented for\n' ...
-    'the satellite() function. Stick with GPS and Galileo. See more in\n' ...
-    'https://www.mathworks.com/help/satcom/ref/satellitescenario.satellite.html.'];
 
-if all(idx)
-    log.error('', [msg '\n\nPlease, select at least GPS or Galileo.']);
+idx = ismember(input_constellations, ["glonass", "beidou", "zqss", "navic"]);
+msg = ['At the moment, it is not possible to obtain the GNSS satellite orbits for the\n' ... 
+    'GLONASS, Beidou, QZSS, and NavIC constellations with the `satellite()` function.\n' ...
+    'See more in https://www.mathworks.com/help/satcom/ref/satellitescenario.satellite.html.'];
+
+if all(idx) && ~is_multiconst_sats
+    log.error('', [msg '\n\nPlease, add at least GPS or Galileo, so that the program can ignore\n' ...
+                'the non-implemented constellations. Alternatively, set the multiconstellation\n'...
+                'satellite mode to enable the usage of GPS/Galileo satellites to transmit\n' ...
+                'signals from any constellation.']);
 elseif any(idx)
     if is_multiconst_sats
-        log.warning('', [msg '\n\nSince multiconstellation satellite mode is enabled, those GPS/Galileo satellites\n' ...
-        'will be used to transmit GLONASS, Beidou, QZSS, and/or NavIC signals.']);
+        log.warning('', [msg '\n\nSince multiconstellation satellite mode is enabled, the found GPS/Galileo\n' ...
+        'satellites will be used to transmit GLONASS, Beidou, QZSS, and/or NavIC signals.']);
     else
-        % remove GLONASS and Beidou
+        % remove GLONASS, Beidou, QZSS, and/or NavIC
         input_constellations = input_constellations(~idx);
         log.warning('', [msg '\nFor this simulation, GLONASS, Beidou, QZSS, and/or NavIC will be disregarded.']);
-        assert(numel(input_constellations) >= 1, "Unexpected empty input constellation after disregarding GLONASS, Beidou, QZSS, and/or NavIC. This is probably a logical error in the code.");
+        assert(numel(input_constellations) >= 1, "Unexpected empty input constellation after disregarding GLONASS, Beidou, QZSS, and/or NavIC. There is probably a logical error in the code.");
     end
 end
 
