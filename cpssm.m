@@ -5,7 +5,7 @@ function out = cpssm(varargin)
 %   CPSSM (Compact phase-screen-based scintillation model) simulates
 %   ionospheric scintillation effects on GNSS signals. It performs:
 %     1. Input parsing of receiver origin, velocity, time span,
-%        constellations, PRNs, simulation duration, sampling rate,
+%        constellations, SVIDs, simulation duration, sampling rate,
 %        IPP altitude, drift velocity, and plotting options.
 %     2. RINEX ephemeris loading and initial parameter setup.
 %     3. Satellite scenario creation using satelliteScenario.
@@ -15,7 +15,8 @@ function out = cpssm(varargin)
 %     7. Geometric computation of scintillation: time series, amplitude,
 %        phase, detrended phase, normalized PSD, and effective path ratio
 %        for each satellite-frequency pair.
-%     8. Output assembly and optional visualization of scintillation realizations.
+%     8. Output assembly and optional visualization of scintillation
+%        realizations.
 %
 % Syntax:
 %   out = cpssm()
@@ -69,24 +70,24 @@ function out = cpssm(varargin)
 %   'constellation'  -  (optional, string or string array) Desired
 %                       constellations. Valid constellations are `"gps"`,
 %                       `"galileo"`, `"glonass`, `"beidou"` for the global
-%                       satellite navigation, and `"zqss"` and `"irnss"`
+%                       satellite navigation, and `"zqss"` and `"navic"`
 %                       for regional. If the user is unsure about which
 %                       constellations are available for desired datetime,
 %                       they must input `""`. In this case, an interactive
-%                       prompt will pop up to guide the available
-%                       constellation selection.
+%                       prompt will pop up to guide the constellation
+%                       selection based on the RINEX data availability.
 %                       Default: ""
 %
 %   'frequency'      -  (optional, string or string array) The desired
 %                       frequency. Must be specified if and only if
-%                       `constellation` is not empty. Valid frequency
-%                       labels for each constellation are:
+%                       `constellation` is not empty. Valid global
+%                       frequency labels for each constellation are:
 %                         • GPS     : "L1", "L2", "L5"
 %                         • Galileo : "E1", "E5a", "E5b", "E6"
 %                         • GLONASS : "G1", "G2", "G3"
 %                         • BeiDou  : "B1", "B2", "B3"
 %                       The chosen frequency must be valid for the
-%                       specified constellation. For example, "L1" is a
+%                       specified constellations. For example, "L1" is a
 %                       valid label if `constealltion` is either
 %                       `"gps"` or `"all"'`. If `frequency` is set to
 %                       `"all"` then all frquency labels of the considered
@@ -96,13 +97,28 @@ function out = cpssm(varargin)
 %                       section.
 %                       Default: "all"
 %
+%   'multiconst_sats' - (optional, logical scalar) Makes all in-view
+%                       satellites agnostic with respect to the constellation
+%                       they belong to, making them transmit in all selected
+%                       frequencies. For instance, let us suppose that you
+%                       have chosen GPS and Galileo, and frequencies L1 and
+%                       E6. If `'multiconst_sats'` is `true`, then every
+%                       satellite will transmit at frequencies L1 and E6.
+%                       Otherwise, only those GPS and Galileo satellites
+%                       will transmit at frequency L1 and E6, respectively.
+%                       Although `multiconst_sats=true` is unrealistic, it
+%                       might be useful when you are only interested in the
+%                       frequency-dependent scintillation effects for a given
+%                       satellite in spite of its orbit or constellation.
+%                       Default: false
+%
 %   'svid'            - (optional, string or string array) Satellite SVID.
 %                       If the user knows the exact satellites availabe for
-%                       the desired datetime, they can input their PRNs.
+%                       the desired datetime, they can input their SVIDs.
 %                       For instance, for 24-Jun-2021 14:00:00, the user
 %                       may input `["G13", "G14"]` or just `"G13"`. The
-%                       PRNs should be passed as an input if and only if
-%                       the `constellation` is not empty. Also, the PRNs
+%                       SVIDs should be passed as an input if and only if
+%                       the `constellation` is not empty. Also, the SVIDs
 %                       must match with the defined constellation types. In
 %                       the previous example, the user must also input
 %                       `"gps"` as one of the desired constellations or
@@ -195,4 +211,10 @@ end
 if parsed_argins.is_play
     play(out.satelliteScenario);
 end
+
+% TODO: `out` should contain only two fields: `satelliteScenario`, and `scintillation`.
+% TODO: The latter doesn't exist at the moment. You should gather all other fields
+% TODO: (`severity`, the constellations, and `doppler_frequency_support` (to me removed))
+% TODO: and put them in the field called `scintillation`. This should require a strong
+% TODO: refactor across the codebase.
 end

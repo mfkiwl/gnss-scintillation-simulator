@@ -2,15 +2,17 @@ function filtered_los_sat_params = get_filtered_los_sat_params(log, sim_params, 
 %GET_LOS_SATS Summary of this function goes here
 %   Detailed explanation goes here
 %% Initialization
-all_constellations = sim_params.cte.all_constellations;
+all_constellations = sim_params.const.all_constellations;
 % sim_params_svids = sim_params.svids;
-sim_params_constellations = sim_params.constellations;
-all_svid_prefix = sim_params.cte.all_svid_prefix;
+% TODO: remove this when GLONASS, Beidou, ZQSS, or NavIC become available
+idx = ismember(sim_params.constellations, ["glonass", "beidou", "zqss", "navic"]);
+sim_params_constellations = sim_params.constellations(~idx);
+all_svid_prefix = sim_params.const.all_svid_prefix;
 time_start = sim_params.temporal_support(1);
 time_end = sim_params.temporal_support(end);
 
 %% Get constellation-filtered LOS satellites
-filtered_ids = all_svid_prefix(contains(all_constellations, sim_params_constellations));
+filtered_ids = all_svid_prefix(ismember(all_constellations, sim_params_constellations));
 
 filtered_los_sat_params = los_sats_params(contains(los_sats_params.Source, filtered_ids), :);
 time_start.Format = 'HH:mm:ss';
@@ -24,7 +26,7 @@ if any(filtered_los_sat_params.Duration < seconds(time_end - time_start))
     filtered_los_sat_params = filtered_los_sat_params(filtered_los_sat_params.Duration == seconds(time_end - time_start), :);
 end
 
-%% Get PRN-filtered LOS satellites
+%% Get SVID-filtered LOS satellites
 % TODO: also filter by SVIDs
 
 end

@@ -7,7 +7,7 @@ function rhof_veff_ratio = extrapolate_scaling_param(sim_params, freq, rhof_veff
 %
 % Inputs:
 %   sim_params              - (required, struct) Simulation parameters with fields:
-%                              cte.spectral.freq_ref.value (reference freq in Hz).
+%                              const.spectral.freq_ref.value (reference freq in Hz).
 %   freq                    - (required, Hz, scalar) Target frequency for scaling.
 %   rhof_veff_ratio_ref     - (required, scalar) Reference rho_F/v_eff ratio.
 %
@@ -32,7 +32,7 @@ function rhof_veff_ratio = extrapolate_scaling_param(sim_params, freq, rhof_veff
 %   Email: rubem.engenharia@gmail.com
 
 %% Initialization
-freq_ref = sim_params.cte.spectral.freq_ref.value;
+freq_ref = sim_params.const.spectral.freq_ref.value;
 
 %% Extrapolate the scaling parameter
 % Scale the reference ratio (rho_F / v_eff) for L2 and L5 [1, Eq. (13)].

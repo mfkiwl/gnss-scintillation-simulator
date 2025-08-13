@@ -53,6 +53,9 @@ sim_params.sim_time = parsed_argin.sim_time;
 %% Seed
 sim_params.seed = parsed_argin.seed;
 
+%% Multiconstellation sats
+sim_params.is_multiconst_sats = parsed_argin.is_multiconst_sats;
+
 %% Scintillation sampling time
 % NOTE: this sampling time is the value used to obtain the scintillation
 % time series realization as well as its intensity and phase PSD

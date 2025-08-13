@@ -9,8 +9,8 @@ function rhof_veff_ratio_ref = get_scaling_param(rx, sat, sim_params)
 %   rx                     - (required, platform object) Receiver platform.
 %   sat                    - (required, satellite object) Satellite platform.
 %   sim_params             - (required, struct) Simulation parameters with fields:
-%                             .cte.spectral.freq_ref.value (Hz),
-%                             .cte.c (speed of light, m/s),
+%                             .const.spectral.freq_ref.value (Hz),
+%                             .const.c (speed of light, m/s),
 %                             .ipp_altitude (m),
 %                             .drift_vel_ned (m/s, 1x3 array).
 %
@@ -45,9 +45,9 @@ drift_vel_ned = sim_params.drift_vel_ned;
 % IPP altitude
 ipp_altitude = sim_params.ipp_altitude;
 % reference frequency for which we are computing ρF/veff
-freq_ref = sim_params.cte.spectral.freq_ref.value;
+freq_ref = sim_params.const.spectral.freq_ref.value;
 % spped of light
-c = sim_params.cte.c;
+c = sim_params.const.c;
 
 % convert lat and long from deg to rad
 rx_traj_lla  = [rx_traj_lla_deg(1:2,:)*pi/180; rx_traj_lla_deg(3,:)];

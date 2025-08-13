@@ -3,9 +3,10 @@ function sim_params = set_constellation_freq_svid(log, sim_params, ...
 %SET_CONSTELLATION_AND_FREQ Summary of this function goes here
 %   Detailed explanation goes here
 %% Initialization
-all_constellations = sim_params.cte.all_constellations;
-all_svids = sim_params.cte.all_svid_prefix;
-all_freq = sim_params.cte.all_freqs;
+all_constellations = sim_params.const.all_constellations;
+all_svids = sim_params.const.all_svid_prefix;
+all_freq = sim_params.const.all_freqs;
+is_multiconst_sats = sim_params.is_multiconst_sats;
 
 input_constellations = parsed_argins.constellations;
 input_freq_names = parsed_argins.frequencies;
@@ -23,38 +24,43 @@ end
 
 %% resolve unavailability of GLONASS and Beidou
 
-idx = contains(input_constellations, ["glonass", "beidou"]);
-if any(idx)
-    input_constellations = input_constellations(~idx);
-    msg = ['Sorry, but at the moment the GLONASS and Beidou are not implemented\n' ...
-        'for the satellite() function. Stick with GPS and Galileo. See more in\n' ...
-        'https://www.mathworks.com/help/satcom/ref/satellitescenario.satellite.html.'];
-    % if there are no other constellations after removing GLONASS and
-    % Beidou, an error should be prompted
-    if isempty(input_constellations)
-        log.warning('', msg);
-    % else, just warn that they were removed
+idx = ismember(input_constellations, ["glonass", "beidou", "zqss", "navic"]);
+msg = ['At the moment the GLONASS, Beidou, QZSS, and NavIC are not implemented for\n' ...
+    'the satellite() function. Stick with GPS and Galileo. See more in\n' ...
+    'https://www.mathworks.com/help/satcom/ref/satellitescenario.satellite.html.'];
+
+if all(idx)
+    log.error('', [msg '\n\nPlease, select at least GPS or Galileo.']);
+elseif any(idx)
+    if is_multiconst_sats
+        log.warning('', [msg '\n\nSince multiconstellation satellite mode is enabled, those GPS/Galileo satellites\n' ...
+        'will be used to transmit GLONASS, Beidou, QZSS, and/or NavIC signals.']);
     else
-        log.warning('', [msg '\nFor this simulation, GLONASS and Beidou will be disregarded.']);
+        % remove GLONASS and Beidou
+        input_constellations = input_constellations(~idx);
+        log.warning('', [msg '\nFor this simulation, GLONASS, Beidou, QZSS, and/or NavIC will be disregarded.']);
+        assert(numel(input_constellations) >= 1, "Unexpected empty input constellation after disregarding GLONASS, Beidou, QZSS, and/or NavIC. This is probably a logical error in the code.");
     end
 end
 
 %% resolve simulation's contellation parameter: from either "all", user argin, or interective choise based on available constellations in the RINEX file
 
-% if the user passed no constellation, they must decide on that at runtime
-% interactive constellation selection
+% use all available constellations
 if input_constellations == "all"
-    log.info('Constellation(s) used in this simulation: %s', ...
+    log.info('The constellation option was set to all.\nThe following constellation are available from the RINEX file and will be used: %s', ...
         join(available_constellations, ','));
     sim_params_constellations = available_constellations;
-elseif all(ismember(input_constellations, available_constellations))
+% all input constellations are available or it is multiconstellation sat mode
+elseif is_multiconst_sats || all(ismember(input_constellations, available_constellations))
     sim_params_constellations = input_constellations;
+% not all input constellations are available
 elseif any(ismember(input_constellations, available_constellations))
     idx = ismember(input_constellations, available_constellations);
     log.warning('', ['You have chosen the constellation(s) %s but they are not available for the RINEX file,\n' ...
-        'datetime, and propagation geometry. These constellation(s) will be therefore dirergarded.'], ...
+        'datetime, and propagation geometry. Therefore, these constellation(s) will be dirergarded.'], ...
         join(input_constellations(~idx), ','));
     sim_params_constellations = available_constellations(idx);
+% interactive constellation selection
 elseif strcmpi(input_constellations, "")
     fprintf(['You have not passed any constellation. For this RINEX file,\n'...
         'datetime, and propagation geometry, the following are availables:\n\n']);
@@ -70,9 +76,14 @@ elseif strcmpi(input_constellations, "")
     idx = cellfun(@(x) double(string(x)), strsplit(idx, ','));
     % create a string array with the selected constellation(s)
     sim_params_constellations = available_constellations(idx);
+    if parsed_argins.is_multiconst_sats && isscalar(sim_params_constellations)
+        log.warning('', ['You have selected multiconstellation satellite mode, but have chosen only\n' ...
+            'one constellation. Therefore the multiconstellation satellite mode will take no effect.'])
+    end
+% none of the input constellations were available
 else
     assert(isempty(intersect(input_constellations, available_constellations)), ...
-        'Unexpected non‐empty intersection between available and input contellation at this code path.');
+        'Unexpected non-empty intersection between available and input contellations at this code path.');
     
     log.error('', ['None of the requested constellation(s) [%s] are available. The available contellation(s) are: %s.\n', ...
         'Use a subset of it or try a different combination of RINEX file, datetime and propagation geometry\n' ...

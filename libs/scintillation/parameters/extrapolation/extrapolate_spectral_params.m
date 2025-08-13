@@ -2,13 +2,13 @@ function extrapolated_spectral_params = extrapolate_spectral_params(sim_params, 
 %EXTRAPOLATE_SPECTRAL_PARAMS Summary of this function goes here
 %   Detailed explanation goes here
 %% Initialization
-freq_ref = sim_params.cte.spectral.freq_ref.value;
+freq_ref = sim_params.const.spectral.freq_ref.value;
 severity = sim_params.severity;
 
-p1       = sim_params.cte.spectral.(severity).p1;
-p2       = sim_params.cte.spectral.(severity).p2;
-U_ref    = sim_params.cte.spectral.(severity).U_ref ;
-mu0_ref  = sim_params.cte.spectral.(severity).mu0_ref;
+p1       = sim_params.const.spectral.(severity).p1;
+p2       = sim_params.const.spectral.(severity).p2;
+U_ref    = sim_params.const.spectral.(severity).U_ref ;
+mu0_ref  = sim_params.const.spectral.(severity).mu0_ref;
 
 if freq == freq_ref
     extrapolated_spectral_params.p1  = p1;

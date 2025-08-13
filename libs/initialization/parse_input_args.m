@@ -6,8 +6,9 @@ default_rx_vel_ned      = [0 0 0];                              % [v1, v2, v3] w
 default_datetime        = datetime([2021 06 24 14 00 00]);      % datetime
 default_rinex_filename  = "BRDM00DLR_R_20170500000_01D_MN.rnx"; % RINEX file name.
 default_is_down_rinex   = false;                                % by default, do not download a RINEX file and use either the user-defined or default RINEX file
-default_svids           = "";                                   % PRNs. Empty string means that it should be defined interactively
+default_svids           = "";                                   % SVIDs. Empty string means that it should be defined interactively
 default_constellations  = "";                                   % Constellations. Empty string means that it should be defined interactively
+default_multiconst_sats = false;                                % Multiconstellation sats: All sats transmit at all considered frequencies
 default_frequencies     = "all";                                % Default frequency. Empty string means that it should be defined interactively
 default_log_lvl         = "DEBUG";                              % Default log level
 default_sim_time        = 300;                                  % total simulation time in seconds
@@ -81,6 +82,9 @@ addParameter(p, 'drift_vel_ned',   default_drift_vel_ned, ...
 % add constellation parameter: it must be one of the valid strings
 addParameter(p, 'constellation', default_constellations, ...
     @(x) validate_constellation(log, all_constellation, x));
+% add multiconst_sats parameter: it must be a logical scalar
+addParameter(p, 'multiconst_sats', default_multiconst_sats, ...
+    @(x) isscalar(x) && islogical(x));
 % add rinex_filename parameter: must be a an empty string or a
 % string containing a valid RINEX file
 addParameter(p, 'rinex_filename', default_rinex_filename, ...
@@ -119,13 +123,14 @@ parsed_input_args.rx_origin           = p.Results.rx_origin;                    
 parsed_input_args.rx_vel_ned          = p.Results.rx_vel_ned;                   % rx velocity
 parsed_input_args.drift_vel_ned       = p.Results.drift_vel_ned;                % ionosphere drift velocity (m/s)
 parsed_input_args.is_download_rinex   = p.Results.download_rinex;               % whether one should download the RINEX file
-parsed_input_args.svids               = string(p.Results.svid);                 % satellite PRNs
+parsed_input_args.svids               = string(p.Results.svid);                 % satellite SVIDs
 parsed_input_args.sim_time            = p.Results.sim_time;                     % total simulation time (s)
 parsed_input_args.t_samp              = p.Results.t_samp;                       % sampling time (s)
 parsed_input_args.ipp_altitude        = p.Results.ipp_altitude;                 % IPP altitude in meters
 parsed_input_args.rinex_filename      = string(p.Results.rinex_filename);       % RINEX file path
 parsed_input_args.datetime            = p.Results.datetime;                     % datetime
 parsed_input_args.constellations      = lower(string(p.Results.constellation)); % constellations
+parsed_input_args.is_multiconst_sats  = p.Results.multiconst_sats;              % multiconstellation sat mode
 parsed_input_args.frequencies         = string(p.Results.frequency);            % frequencies
 parsed_input_args.severity            = string(p.Results.severity);             % severity
 parsed_input_args.is_plot             = p.Results.plot;                         % whether plot the ionospheric scintillation realization
@@ -223,7 +228,7 @@ end
 end
 
 function validate_svid(log, constellation, svid)
-% validatePRN Returns true if `svid` is valid for the given constellation.
+% validateSVID Returns true if `svid` is valid for the given constellation.
 %
 %  - If constellation is empty ("" or ''), only an empty SVID is allowed.
 %  - For 'gps':   SVID must be 'Gxx' where xx ∈ [1,32].
@@ -298,7 +303,7 @@ freq           = string(freq);
 %% handle special frequency value: `"all"`
 % if it is the scalar string `"all"`
 if isscalar(freq) && freq == "all"
-    % NOTE: frequency set as all is always valid
+    % NOTE: frequency set as "all" is always valid
     return
 % if it isn't the scalar string `"all"` but contains it in this array
 elseif any(ismember("all", freq))
@@ -308,7 +313,7 @@ end
 
 %% since `freq` to set to anything other than `"all"` `constellations` cannot be `""`
 if constellations == ""
-    log.error(['You cannot pass frequencies if you have not ' ...
+    log.error('', ['You cannot pass frequencies if you have not ' ...
         'defined a contellation.']);
 end
 
@@ -318,6 +323,7 @@ all_freq_names.gps     = ["L1", "L2", "L5"];
 all_freq_names.galileo = ["E1", "E5a", "E5b", "E6"];
 all_freq_names.glonass = ["G1", "G2", "G3"];
 all_freq_names.beidou  = ["B1", "B2", "B3"];
+% TODO: add ZQSS and NavIC
 % for `constellations=="all"`, allow the union of the above
 all_freq_names.all = unique([all_freq_names.gps, all_freq_names.galileo, ...
     all_freq_names.glonass, all_freq_names.beidou]);

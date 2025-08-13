@@ -16,14 +16,14 @@ sat_scen = satelliteScenario(sim_params.temporal_support(1), ...
 satellite(sat_scen, rinex);
 
 % FIXME: It is not clear to me how the velocity is defined or, at least,
-% maintained constant. `geoTrajectory()` seems to require a starting and
-% ending position, as well as the travel duration to compute the
-% trajectory. It has some ways to add velocity (or speed) information, but
-% it doesn't seem straightforward to set a constant velocity. It is because
-% the velocity seems to have a strong dependence on the ending position and
-% simulation time: A distant path seems to make the body accelerate during
-% the trajectory. In other words, it seems to have a dynamic velocity. For
-% the sake of first try, the receiver is being here to be static
+% FIXME: maintained constant. `geoTrajectory()` seems to require a starting and
+% FIXME: ending position, as well as the travel duration to compute the
+% FIXME: trajectory. It has some ways to add velocity (or speed) information, but
+% FIXME: it doesn't seem straightforward to set a constant velocity. It is because
+% FIXME: the velocity seems to have a strong dependence on the ending position and
+% FIXME: simulation time: A distant path seems to make the body accelerate during
+% FIXME: the trajectory. In other words, it seems to have a dynamic velocity. For
+% FIXME: the sake of first try, the receiver is being here to be static
 % SEE: https://www.mathworks.com/help/satcom/ref/geotrajectory-system-object.html
 rx_traj = geoTrajectory( ...
     [parsed_argins.rx_origin; parsed_argins.rx_origin], ...
@@ -50,10 +50,10 @@ filtered_los_sats_params = get_filtered_los_sat_params(log, sim_params, ...
 is_los_sat = ismember(sat_scen.Satellites.Name, filtered_los_sats_params.Source);
 delete(sat_scen.Satellites(~is_los_sat))
 % define 3D model of the satellite object
-modelFile = which("SmallSat.glb");
-if ~isempty(modelFile)
+model_file = which("SmallSat.glb");
+if ~isempty(model_file)
     for k = 1:numel(sat_scen.Satellites)
-        sat_scen.Satellites(k).Visual3DModel      = modelFile;    % GLB model
+        sat_scen.Satellites(k).Visual3DModel      = model_file;    % GLB model
         sat_scen.Satellites(k).Visual3DModelScale = 5e5;          % scale up to 100 km so it’s visible
         sat_scen.Satellites(k).MarkerSize         = 0.1;          % hide the blue dot
     end
