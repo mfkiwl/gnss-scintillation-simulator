@@ -297,6 +297,7 @@ if ~ischar(freq) && ~isstring(freq)
     log.error('', ['You must pass a char, string, or string array ' ...
         'for the desired frequencies.']);
 end
+% normalize inputs
 constellations = lower(string(constellations));
 freq           = string(freq);
 
@@ -317,8 +318,7 @@ if constellations == ""
         'defined a contellation.']);
 end
 
-%% check if the passed frequency values are valid
-% define valid frequency labels for each GNSS constellation
+%% define valid frequency labels for each used constellation
 all_freq_names.gps     = ["L1", "L2", "L5"];
 all_freq_names.galileo = ["E1", "E5a", "E5b", "E6"];
 all_freq_names.glonass = ["G1", "G2", "G3"];
@@ -327,15 +327,22 @@ all_freq_names.beidou  = ["B1", "B2", "B3"];
 % for `constellations=="all"`, allow the union of the above
 all_freq_names.all = unique([all_freq_names.gps, all_freq_names.galileo, ...
     all_freq_names.glonass, all_freq_names.beidou]);
-
 % remove not used constellations
 nonused_constellations = setxor(fieldnames(all_freq_names), constellations);
 valid_freq_names = rmfield(all_freq_names, nonused_constellations);
 valid_freq_names = struct2array(valid_freq_names);
 
-% Check that freq is a string or character vector and is among the allowed ones
+%% Check that freq is a string or character vector and is among the allowed ones
 if any(~ismember(freq, valid_freq_names))
     log.error('', ['You have passed frequency(ies) that are not valid ' ...
         'for the considered constellation(s).'])
 end
+%% check if there are constellations with no frequencies
+for constellation=constellations
+    if ~any(ismember(freq,all_freq_names.(constellation)))
+        log.error('', ['You have passed have passed a constellation that doesn''t contain\n' ...
+            'any frequency for it.'])
+    end
+end
+
 end
