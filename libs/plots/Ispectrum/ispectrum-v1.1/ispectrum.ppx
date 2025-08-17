@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings version="1.0">
+	<category name="gam_quadrature.h">
+		<category name="Window">
+			<property name="Left" type="integer">184</property>
+			<property name="Top" type="integer">184</property>
+			<property name="Right" type="integer">1552</property>
+			<property name="Bottom" type="integer">683</property>
+			<property name="Maximized" type="integer">0</property>
+			<property name="Active" type="integer">0</property>
+		</category>
+	</category>
+	<category name="ispectrum.c">
+		<category name="Window">
+			<property name="Left" type="integer">-8</property>
+			<property name="Top" type="integer">-28</property>
+			<property name="Right" type="integer">1367</property>
+			<property name="Bottom" type="integer">674</property>
+			<property name="Maximized" type="integer">1</property>
+			<property name="Active" type="integer">1</property>
+		</category>
+	</category>
+	<category name="gamma_integral.c">
+		<category name="Window">
+			<property name="Left" type="integer">0</property>
+			<property name="Top" type="integer">0</property>
+			<property name="Right" type="integer">1368</property>
+			<property name="Bottom" type="integer">499</property>
+			<property name="Maximized" type="integer">0</property>
+			<property name="Active" type="integer">0</property>
+		</category>
+	</category>
+	<category name="gamma_integral.h" />
+	<category name="gam_quadrature.c">
+		<category name="Window">
+			<property name="Left" type="integer">23</property>
+			<property name="Top" type="integer">23</property>
+			<property name="Right" type="integer">1391</property>
+			<property name="Bottom" type="integer">522</property>
+			<property name="Maximized" type="integer">0</property>
+			<property name="Active" type="integer">0</property>
+		</category>
+	</category>
+	<category name="gam_analytic.h">
+		<category name="Window">
+			<property name="Left" type="integer">46</property>
+			<property name="Top" type="integer">46</property>
+			<property name="Right" type="integer">1414</property>
+			<property name="Bottom" type="integer">545</property>
+			<property name="Maximized" type="integer">0</property>
+			<property name="Active" type="integer">0</property>
+		</category>
+	</category>
+	<category name="gam_analytic.c">
+		<category name="Window">
+			<property name="Left" type="integer">69</property>
+			<property name="Top" type="integer">69</property>
+			<property name="Right" type="integer">1437</property>
+			<property name="Bottom" type="integer">568</property>
+			<property name="Maximized" type="integer">0</property>
+			<property name="Active" type="integer">0</property>
+		</category>
+	</category>
+	<category name="intde1.h">
+		<category name="Window">
+			<property name="Left" type="integer">92</property>
+			<property name="Top" type="integer">92</property>
+			<property name="Right" type="integer">1460</property>
+			<property name="Bottom" type="integer">591</property>
+			<property name="Maximized" type="integer">0</property>
+			<property name="Active" type="integer">0</property>
+		</category>
+	</category>
+	<category name="intde2.c" />
+</settings>

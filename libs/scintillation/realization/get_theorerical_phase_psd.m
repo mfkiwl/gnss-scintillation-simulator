@@ -1,0 +1,81 @@
+function theo_phase_psd = get_theorerical_phase_psd(mu, spectral_params)
+% get_norm_phase_sdf
+%
+% Syntax:
+%   norm_phase_sdf = get_norm_phase_sdf(mu, irr_param)
+%
+% Description:
+%   Compute the normalized phase spectral density function (SDF) using
+%   a two-component power-law approach in a normalized wavenumber array
+%   defined by μ, based on parameters specified in `irr_param`.
+%   The function enforces a symmetric SDF around the 0 frequency by using
+%   abs(μ). The singularity at μ = 0 is explicitly set to zero to avoid
+%   undesirable distortions of the phase realizations.
+%
+% Inputs:
+%   μ - Frequency array (e.g., spanning -50 to 50).
+%
+%   irr_param - Structure containing fields:
+%       U   : Spectral strength
+%       p1  : Exponent for the lower-frequency power-law region
+%       p2  : Exponent for the higher-frequency power-law region
+%       μ0  : Transition frequency between the two power-law regimes
+%
+% Outputs:
+%   norm_phase_sdf - Vector of the same size as μ, containing the
+%                    normalized phase SDF values.
+%
+% Notes:
+%   - The absolute value of μ is used here to ensure that the SDF is
+%     symmetric around the 0 frequency. Using the true (signed) μ as
+%     proposed by equation (9) of [1] would result in an asymmetric SDF.
+%
+%   - The value at μ = 0 is set to zero (same approach used in the
+%     `GenPSRealization.m` script). This is feasible since the function
+%     is undefined at μ = 0 due to the power-law form, and setting it
+%     to zero prevents unwanted artifacts in the phase realizations.
+%
+% Example:
+%   mu = -50:0.01:50;
+%   irr_param.U   = 1;
+%   irr_param.p1  = 2.0;
+%   irr_param.p2  = 3.5;
+%   irr_param.mu0 = 5;
+%   sdf = get_norm_phase_sdf(mu, irr_param);
+%
+% References:
+%   [1] Carrano, C. S., and C. L. Rino (2016), A theory of scintillation
+%       for two-component power law irregularity spectra: Overview and
+%       numerical results, Radio Sci., 51, 789–813,
+%       doi:10.1002/2015RS005903.
+%
+% Author: Rodrigo de Lima Florindo
+% ORCID: https://orcid.org/0000-0003-0412-5583
+% Email: rdlfresearch@gmail.com
+
+% Preallocate the normalized phase spectral density function (SDF) values.
+theo_phase_psd = zeros(size(mu));
+
+% Indices for below and above μ0
+idx_below = (abs(mu) <= spectral_params.mu0);
+idx_above = (abs(mu) > spectral_params.mu0);
+
+% TODO: cite ref
+if spectral_params.mu0>=1
+    Cpp= spectral_params.U;
+else
+    Cpp= spectral_params.U / spectral_params.mu0^(spectral_params.p2-spectral_params.p1);
+end
+
+% First case TODO: cite ref
+theo_phase_psd(idx_below) = ...
+    Cpp .* abs(mu(idx_below)).^(-spectral_params.p1);
+
+% Second case TODO: cite ref
+theo_phase_psd(idx_above) = ...
+    Cpp .* (spectral_params.mu0^(spectral_params.p2 - spectral_params.p1)) ...
+    .* abs(mu(idx_above)).^(-spectral_params.p2);
+
+% Manually set the singular point at μ=0 to zero
+theo_phase_psd(mu == 0) = 0;
+end

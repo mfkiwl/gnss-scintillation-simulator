@@ -1,0 +1,56 @@
+# Makefile.linux
+# Build shared library and executables with correct PIC/PIE flags
+
+CC = gcc
+
+# Compiler flags
+default_CFLAGS = -Wall -O3
+PICFLAGS     = -fPIC      # for shared library objects
+# PIEFLAGS    = -fPIE      # not needed when linking executables with -no-pie
+
+# Linker flags for executables
+o_LDFLAGS = -no-pie
+
+# Targets
+all: gamma_integral.so.1.0 ispectrum gam_quadrature gam_analytic
+
+# Shared library for gamma_integral
+gamma_integral.o: gamma_integral.c gamma_integral.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c -I../../include gamma_integral.c
+
+intde1.o: intde1.c intde1.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c intde1.c
+
+gamma_integral.so.1.0: gamma_integral.o intde1.o
+	$(CC) -shared -Wl,-soname,gamma_integral.so.1 -o gamma_integral.so.1.0 gamma_integral.o intde1.o -lm
+
+# Object files for executables (also PIC-safe)
+ispectrum.o: ispectrum.c
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c ispectrum.c
+
+gam_analytic.o: gam_analytic.c gam_analytic.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c gam_analytic.c
+
+gam_analytic_main.o: gam_analytic.c gam_analytic.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c -DMAIN gam_analytic.c -o gam_analytic_main.o
+
+gam_quadrature.o: gam_quadrature.c gam_quadrature.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c gam_quadrature.c
+
+gam_quadrature_main.o: gam_quadrature.c gam_quadrature.h
+	$(CC) $(default_CFLAGS) $(PICFLAGS) -c -DMAIN gam_quadrature.c -o gam_quadrature_main.o
+
+# Binaries linking with -no-pie
+gam_analytic: gam_analytic_main.o
+	$(CC) $(o_LDFLAGS) -o gam_analytic gam_analytic_main.o -lm
+
+gam_quadrature: gam_quadrature_main.o gamma_integral.o gam_analytic.o intde1.o
+	$(CC) $(o_LDFLAGS) -o gam_quadrature gam_quadrature_main.o gamma_integral.o gam_analytic.o intde1.o -lm
+
+ispectrum: ispectrum.o gam_quadrature.o gamma_integral.o gam_analytic.o intde1.o
+	$(CC) $(o_LDFLAGS) -o ispectrum ispectrum.o gam_quadrature.o gamma_integral.o gam_analytic.o intde1.o -lm
+
+# Clean
+clean:
+	rm -f *.o *.so.1.0 ispectrum gam_quadrature gam_analytic
+
