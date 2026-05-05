@@ -3,7 +3,7 @@ function [propagated_complex_field, theo_phase_psd, ...
     intensity_psd_1sided_post, s4, preprop_phase_psd_1sided, ...
     postprop_phase_psd_1sided] ...
     = get_scintillation_realization(sim_params, out, constellation, ...
-    freq_name, rhof_veff_ratio, nfft, varargin)
+    freq_name, rhof_veff_ratio, nfft)
 % get_scintillation_time_series
 %
 % Syntax:
@@ -54,7 +54,7 @@ function [propagated_complex_field, theo_phase_psd, ...
 %   - get_norm_phase_sdf(mu, irr_params)
 %       Computes a normalized phase spectral density function given mu and
 %       irregularity parameters.
-%   - get_phase_realization(norm_phase_sdf, D_mu, seed)
+%   - get_phase_realization(norm_phase_sdf, D_mu, nfft, seed)
 %       Generates a random (possibly complex) phase realization using the
 %       normalized phase spectral density. Requires a parameter D_mu not shown
 %       in this snippet.
@@ -82,10 +82,10 @@ function [propagated_complex_field, theo_phase_psd, ...
 %                                               ratio, ...
 %                                               seed_val);
 % References:
-%   [2] "Display_SpectraModel.m" from the GNSS Scintillation Simulator
-%       examples, available at
-%       https://github.com/cu-sense-lab/gnss-scintillation-simulator/blob/master/examples/Display_SpectraModel.m
-%       [Accessed: 10-02-2025].
+%   [1] C. S. Carrano and C. L. Rino, “A theory of scintillation for 
+%       two‐component power law irregularity spectra: Overview and 
+%       numerical results,” Radio Science, vol. 51, no. 6, pp. 789–813, 
+%       June 2016, https://doi.org/10.1002/2015RS005903.
 %
 % Author:
 %   Rubem Vasconcelos Pacelli
@@ -97,19 +97,28 @@ function [propagated_complex_field, theo_phase_psd, ...
 %   Email: rdlfresearch@gmail.com
 
 %% Initialization
-% FIXME: This varargin should be removed as it seems not necessary anymore
-p = inputParser;
-addParameter(p, 'data_type', 'double', @(x) ischar(x) || isstring(x));
-parse(p, varargin{:});
-data_type = p.Results.data_type;
-
 doppler_frequency = out.doppler_frequency_support;
 spectral_params = out.(constellation).spectral.(freq_name);
 temporal_support = sim_params.temporal_support;
 seed = sim_params.seed;
 
-% normalized frequency axis
-% TODO: add a `SEE:` codetag with a ref for the computation of μ
+% Normalized wavenumber axis (Carrano/Rino convention).
+%
+% We model what is observed as a *time series* resulting from scanning a
+% spatial phase screen with an effective scan velocity v_eff. Carrano relates
+% temporal frequency f [cycles/s] to the normalized transverse wavenumber mu
+% through:
+%   mu = 2*pi*f*(rho_F/v_eff)
+% NOTE:
+%   `out.doppler_frequency_support` is `fftshift`-ordered; downstream synthesis
+%   uses `ifftshift` (see `get_phase_realization.m`) to map into FFT bin order.
+%
+% Notes:
+%   - mu is an *angular* normalized wavenumber (radians), consistent with
+%     Carrano's use of cos(mu*xi) / exp(j*mu*xi) and the 1/(2*pi) inverse-Fourier
+%     normalization in [1].
+%   - `rhof_veff_ratio` is (rho_F / v_eff). Larger values stretch the same
+%     Doppler axis to larger mu.
 mu = 2 * pi * doppler_frequency * rhof_veff_ratio;
 D_mu = mu(2) - mu(1);
 
@@ -128,7 +137,7 @@ theo_phase_psd = get_theorerical_phase_psd(mu, spectral_params);
 % NOTE: we call it "detrented" because there is a function called `linex()`
 % which removes the linear trend of the phase realization.
 detrended_phase_realization = get_phase_realization(theo_phase_psd, ...
-    D_mu, nfft, seed, data_type);
+    D_mu, nfft, seed);
 
 %% Propagate the scintillation field, i.e., `e^(1j*detrended_phase_realization)`
 propagated_complex_field = get_propagated_field(mu, detrended_phase_realization);
@@ -141,28 +150,37 @@ postprop_phase = get_corrected_phase(propagated_complex_field);
 
 %% Postpropagated PSD of the amplitude (Intensity PSD)
 % SEE: `plot(mu(mu>0), 10*log10(intensity_psd_1sided_post))`
-intensity_psd_1sided_post = compute_psd_1sided(postprop_amplitude.^2, ...
-    nfft, doppler_frequency);
+intensity_psd_1sided_post = compute_psd(postprop_amplitude.^2, ...
+    nfft, sim_params.t_samp);
 s4 = get_S4(postprop_amplitude.^2);
 
 %% Pre- and Postpropagated PSD of the phase
-% NOTE: Both intensity(?) and phase are normalized by
-% `rhof_veff_ratio` to agree with the code in [2].
+% PSDs computed here are *per-Hz* (Doppler frequency domain) because the input
+% is a time series and `compute_psd` normalizes by df.
+%
+% When comparing against Carrano/Rino theoretical SDFs (functions of angular mu),
+% you have two equivalent choices:
+%   (A) Convert PSD_f(f) to a per-mu PSD via df/dmu, where mu = 2*pi*f*(rho_F/v_eff).
+%   (B) Convert PSD_f(f) to Carrano's SDF convention directly:
+%         PSD_f(f) = (rho_F/v_eff) * P(mu(f))  =>  P_est(mu) = PSD_f / (rho_F/v_eff)
+%
+% The plotting code in `plot_scintillation_psd.m` uses (B) so both intensity and
+% phase are shown in Carrano's I(mu) / P(mu) conventions.
 
 % NOTE: detrended_phase_realization contains only the refractive-related
 % effect of the phase disturbance at the IPP point,
 % which has not been propagated to the receiver yet
 % SEE: `plot(mu(mu>0), preprop_phase_psd_1sided)`
-preprop_phase_psd_1sided  = compute_psd_1sided(detrended_phase_realization, ...
-    nfft, doppler_frequency) / rhof_veff_ratio;
+preprop_phase_psd_1sided  = compute_psd(detrended_phase_realization, ...
+    nfft, sim_params.t_samp);
 
 % NOTE: `phase(scint_field)` is the phase of the complex field
 % after the propagation, which contains not only the refractive
 % part, but also the difracted part caused by the free-space
 % propagation
 % SEE: `plot(mu(mu>0), postprop_phase_psd_1sided)`
-postprop_phase_psd_1sided = compute_psd_1sided(phase(propagated_complex_field), ...
-    nfft, doppler_frequency) / rhof_veff_ratio;
+postprop_phase_psd_1sided = compute_psd(get_corrected_phase(propagated_complex_field), ...
+    nfft, sim_params.t_samp);
 
 %% Timeseries generation (and truncation)
 % NOTE: `timetable` is recommended over `timeseries`. Timetables can store
@@ -185,11 +203,33 @@ end
 
 % -------------------------------------------------------------------------
 
-function psd_1sided = compute_psd_1sided(real_signal, nfft, ...
-    doppler_freq)
-% Compute the one-sided power spectral density function (PSD)
-raw_fft = abs(fft(real_signal, nfft)).^2 / nfft;
-partial_psd = raw_fft(2 : (nfft/2));
-df = abs(doppler_freq(2) - doppler_freq(1));
-psd_1sided = partial_psd / (nfft * df);
+function psd_1sided = compute_psd(real_signal, nfft, t_samp)
+% Compute the PSD using Welch's method (pwelch).
+%
+% NOTE: The output is NOT the "true" one-sided PSD because we do not multiply
+% NOTE: by 2. Instead, we return only the right-side of the two-sided PSD
+% NOTE: (strictly positive frequencies, excluding DC and Nyquist).
+% NOTE: This matches Carrano/Rino's I(mu) and P(mu) conventions, which are
+% NOTE: defined for mu>0.
+%
+% NOTE: MATLAB's `pwelch(...,'onesided')` returns a one-sided PSD where
+% NOTE: positive-frequency power is doubled (except DC and Nyquist) so that
+% NOTE: integrating over [0, Fs/2] matches total variance. To recover the
+% NOTE: right-side of the two-sided PSD, we simply divide those bins by 2.
+%
+% NOTE: We remove the DC (mean) before windowing. Otherwise, the window
+% NOTE: spreads the mean value into nearby frequency bins (spectral leakage),
+% NOTE: creating a small low-frequency "bump". The previous FFT-based
+% NOTE: implementation implicitly avoided this by excluding the DC bin.
+Fs = 1 / t_samp;
+
+% Use a single Welch segment with a periodic Hamming window (spectral-analysis
+% friendly; aligns with FFT periodicity assumptions).
+win = hamming(nfft);
+noverlap = 0;
+
+x = real_signal(:);
+x = x - mean(x);
+psd_onesided = pwelch(x, win, noverlap, nfft, Fs, 'onesided');
+psd_1sided = psd_onesided(2:(nfft/2)) / 2;
 end

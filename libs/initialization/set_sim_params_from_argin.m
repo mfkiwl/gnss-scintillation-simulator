@@ -47,6 +47,12 @@ sim_params.ipp_altitude = parsed_argin.ipp_altitude;
 %% Severity
 sim_params.severity = parsed_argin.severity;
 
+% If user provided custom spectral parameters, attach them to sim_params.const.spectral.custom
+if isfield(parsed_argin, 'spectral') && ~isempty(parsed_argin.spectral) && sim_params.severity == "custom"
+	% expect parsed_argin.spectral already validated by parse_input_args
+	sim_params.const.spectral.custom = parsed_argin.spectral;
+end
+
 %% Simulation time
 sim_params.sim_time = parsed_argin.sim_time;
 
@@ -56,9 +62,19 @@ sim_params.seed = parsed_argin.seed;
 %% Multiconstellation sats
 sim_params.is_multiconst_sats = parsed_argin.is_multiconst_sats;
 
+%% Elevation mask (deg)
+sim_params.elevation_mask_deg = parsed_argin.elevation_mask_deg;
+
+%% Max satellites to simulate
+sim_params.max_sats = parsed_argin.max_sats;  % cap how many satellites we bother simulating
+
 %% Scintillation sampling time
 % NOTE: this sampling time is the value used to obtain the scintillation
 % time series realization as well as its intensity and phase PSD
 sim_params.t_samp = parsed_argin.t_samp;
-end
 
+%% Optional override for rho_F/v_eff at L1
+if isfield(parsed_argin, 'rhof_veff_ratio_L1') && ~isempty(parsed_argin.rhof_veff_ratio_L1)
+    sim_params.rhof_veff_ratio_L1 = double(parsed_argin.rhof_veff_ratio_L1);
+end
+end

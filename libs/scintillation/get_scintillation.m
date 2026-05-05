@@ -8,8 +8,10 @@ rx = sim_params.satelliteScenario.Platforms(1);
 % - U and μ₀: dependent only on the frequency (computed via extrapolation)
 % - p₁ and p₂: independent
 % - Doppler frequency: dependent only on t_samp and FFT samples
+
 % Frequency support where the PSD are plotted
-nfft = nicefftnum(sim_params.sim_time / sim_params.t_samp);
+% NOTE: The +1 is to account for the zero-instant timestamp in the temporal support
+nfft = nicefftnum((sim_params.sim_time / sim_params.t_samp)+1);
 % FIXME: At the moment, `doppler_frequency_support` is used to create an
 % FIXME: independent field in `out`. Instead of that, attach it to the
 % FIXME: PSDs by using a `table` to join the spectra and their respective
@@ -52,8 +54,12 @@ for sat = sim_params.satelliteScenario.Satellites
         out.(sat_constellation).scenario(end+1).sat = sat;
         out.(sat_constellation).scenario(end).rx = rx;
         % for this geometry propagation, get the ρF/veff for the reference
-        % frequency
-        rhof_veff_ratio_ref = get_scaling_param(rx, sat, sim_params);
+        % frequency (allow override if supplied)
+        if isfield(sim_params, 'rhof_veff_ratio_L1') && ~isnan(sim_params.rhof_veff_ratio_L1)
+            rhof_veff_ratio_ref = sim_params.rhof_veff_ratio_L1;
+        else
+            rhof_veff_ratio_ref = get_scaling_param(rx, sat, sim_params);
+        end
         
             % for all valid frequencies for this satellite contellation
             for j = 1:numel(sim_params.freqs.(sat_constellation).name)
@@ -103,4 +109,3 @@ out.satelliteScenario = sim_params.satelliteScenario;
 % Severity
 out.severity = sim_params.severity;
 end
-

@@ -3,7 +3,7 @@ function [parsed_input_args, log] = parse_input_args(cspsm_root_dir, all_constel
 %% Define default values
 default_rx_origin       = [-23.2198 -45.8916  59.6780];         % [latitude (deg); longitude (deg); altitude (m)] -> São José dos Campos
 default_rx_vel_ned      = [0 0 0];                              % [v1, v2, v3] where: v1 = west-east, v2 = south-north, v3 = up-down velocity
-default_datetime        = datetime([2021 06 24 14 00 00]);      % datetime
+default_datetime        = datetime([2021 06 24 23 00 00]);      % datetime
 default_rinex_filename  = "BRDM00DLR_R_20170500000_01D_MN.rnx"; % RINEX file name.
 default_is_down_rinex   = false;                                % by default, do not download a RINEX file and use either the user-defined or default RINEX file
 default_svids           = "";                                   % SVIDs. Empty string means that it should be defined interactively
@@ -19,6 +19,9 @@ default_severity        = "strong";                             % Ionospheric sc
 default_is_plot         = false;                                % Whether plot the ionospheric scintillation realization
 default_is_play         = false;                                % Whether play an animation of the receiver and satellite geometry
 default_seed            = 1;                                    % Default seed
+default_elev_mask_deg   = 25;                                   % Minimum elevation angle mask (deg)
+default_max_sats        = Inf;                                  % Maximum satellites to simulate
+default_rhof_veff_ratio_L1 = NaN;                               % Optional override for rho_F/v_eff at L1
 
 %% Parsing phase 0: resolve the logging before anything else
 
@@ -79,6 +82,9 @@ addParameter(p, 'ipp_altitude',  default_ipp_altitude, ...
 % Add drift_vel parameter: must be a numeric 3-element vector.
 addParameter(p, 'drift_vel_ned',   default_drift_vel_ned, ...
     @(x) isnumeric(x) && isvector(x) && numel(x)==3);
+% Add optional rhof_veff_ratio_L1 override: positive scalar or empty
+addParameter(p, 'rhof_veff_ratio_L1', default_rhof_veff_ratio_L1, ...
+    @(x) isempty(x) || (isnumeric(x) && isscalar(x) && isfinite(x) && x > 0));
 % add constellation parameter: it must be one of the valid strings
 addParameter(p, 'constellation', default_constellations, ...
     @(x) validate_constellation(log, all_constellation, x));
@@ -101,9 +107,19 @@ addParameter(p, 'svid',       default_svids, ...
 addParameter(p, 'datetime',    default_datetime, ...
     @(x) validate_datetime(log, p.Results.download_rinex, ...
     p.Results.rinex_filename, x));
-% Add severity parameter: must be "weak", "moderate", or "strong"
+% Add severity parameter: must be "weak", "moderate", "strong" or "custom"
 addParameter(p, 'severity',    default_severity, ...
-    @(x) isscalar(string(x)) && ismember(x, ["weak", "moderate", "strong"]));
+    @(x) isscalar(string(x)) && ismember(x, ["weak", "moderate", "strong", "custom"]));
+
+% Add spectral parameter: optional struct used only when severity == 'custom'
+% It must be a struct (validated more strictly below when severity is custom)
+addParameter(p, 'spectral', [], @(x) isempty(x) || isstruct(x));
+% Add elevation mask parameter: must be a nonnegative scalar (degrees)
+addParameter(p, 'elevation_mask_deg', default_elev_mask_deg, ...
+    @(x) isnumeric(x) && isscalar(x) && isfinite(x) && (x >= 0));
+% Add maximum satellites parameter: positive scalar or Inf
+addParameter(p, 'max_sats', default_max_sats, ...
+    @(x) isnumeric(x) && isscalar(x) && (x > 0));
 
 % parse it
 parse(p, varargin{:});
@@ -136,6 +152,34 @@ parsed_input_args.severity            = string(p.Results.severity);             
 parsed_input_args.is_plot             = p.Results.plot;                         % whether plot the ionospheric scintillation realization
 parsed_input_args.is_play             = p.Results.play;                         % whether play an animation of the receiver and satellite geometry
 parsed_input_args.seed                = p.Results.seed;                         % simulation seed
+% spectral: when severity is 'custom', this must be a struct with required fields
+parsed_input_args.spectral            = p.Results.spectral;
+parsed_input_args.elevation_mask_deg  = p.Results.elevation_mask_deg;           % minimum elevation angle (deg)
+parsed_input_args.max_sats            = p.Results.max_sats;                     % maximum satellites to simulate
+parsed_input_args.rhof_veff_ratio_L1  = p.Results.rhof_veff_ratio_L1;            % optional override for rho_F/v_eff at L1
+
+% If severity is 'custom', validate the provided spectral struct
+if parsed_input_args.severity == "custom"
+    if isempty(parsed_input_args.spectral)
+        log.error('', ['severity set to "custom" but no ''spectral'' argument was provided. When using severity=="custom", you must pass a struct with fields: U_ref, mu0_ref, p1, p2 (all positive doubles).']);
+    end
+    spec = parsed_input_args.spectral;
+    required_fields = {"U_ref","mu0_ref","p1","p2"};
+    for rf = required_fields
+        fname = rf{1};
+        if ~isfield(spec, fname)
+            log.error('', ['spectral struct must contain field "%s" when severity=="custom".'], fname);
+        end
+        val = spec.(fname);
+        if ~(isnumeric(val) && isscalar(val) && isfinite(val) && (double(val) > 0))
+            log.error('', ['spectral.%s must be a positive finite numeric scalar.'], fname);
+        end
+        % ensure it's double
+        spec.(fname) = double(val);
+    end
+    % store back sanitized spectral
+    parsed_input_args.spectral = spec;
+end
 
 end
 

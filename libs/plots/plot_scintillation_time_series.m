@@ -31,22 +31,32 @@ function plot_scintillation_time_series(out)
 
 %% Initialization
 severities = out.severity;
+screen_dpi = get(0, 'ScreenPixelsPerInch');
+font_scale = max(0.75, min(1.0, screen_dpi / 120));
+font_axis = round(14 * font_scale);
+font_label = round(15 * font_scale);
+font_title = round(16 * font_scale);
+font_legend = round(13 * font_scale);
+font_sgtitle = round(18 * font_scale);
 
 %% Plot
-constellations = setxor(string(fieldnames(out)), ...
+constellations = setxor(string(fieldnames(out)).', ...
     ["doppler_frequency_support", "satelliteScenario", "severity"]);
 % for all constellation
 for constellation = constellations
     % Frequency names for this constellation
     freq_names = string(fieldnames(out.(constellation).spectral)).';
     % for all rx-sat scenario
-    for i = 1:numel(out.(constellation).scenario)
-        for severity = severities
-            % Create figure and set Helvetica as default font
-            fig = figure('Name', sprintf('%s Magnitude & Phase ', severity), ...
-                'Position', [50, 50, 1400, 550], 'Color', 'w');
-            set(fig, 'DefaultTextFontName', 'Helvetica');
-            tiledlayout(2, 1, "TileSpacing", "compact");
+	    for i = 1:numel(out.(constellation).scenario)
+	        for severity = severities
+	            % Create figure and set Helvetica as default font
+	            fig = figure('Name', sprintf('%s Magnitude & Phase ', severity), ...
+	                'Units', 'pixels', ...
+	                'Position', [100, 100, 1100, 520], ...
+	                'Color', 'none', 'InvertHardcopy', 'off');
+	            set(fig, 'PaperPositionMode', 'auto');
+	            set(fig, 'DefaultTextFontName', 'Helvetica');
+	            tiledlayout(2, 1, "TileSpacing", "compact");
 
             % Initialize storage for legend labels and S4 values
             legend_labels = cell(1, numel(freq_names));
@@ -57,19 +67,20 @@ for constellation = constellations
             hold on;
             for j = 1:numel(freq_names)
                 freq_name = freq_names(j);
+                freq_name_char = char(freq_name);
                 scint_field = out.(constellation).scenario(i).(freq_name).complex_field_postprop;
                 % Compute S4
                 s4_values(j) = get_S4(abs(scint_field.Variables).^2);
 
                 mag_timeseries_dB = varfun(@(x) 10*log10(abs(x).^2), scint_field);
                 plot(mag_timeseries_dB.Time, mag_timeseries_dB.Fun_Var1, 'LineWidth', 2.4);
-                set(gca, 'FontName', 'Helvetica', 'FontSize', 20);
-                legend_labels{j} = sprintf('%s (S_4=%.3f)', freq_name, s4_values(j));
+                set(gca, 'FontName', 'Helvetica', 'FontSize', font_axis, 'Color', 'none');
+                legend_labels{j} = sprintf('%s ($S_4=%.3f$)', freq_name_char, s4_values(j));
             end
-            xlabel('Time (s)', 'FontName', 'Helvetica', 'FontSize', 20);
-            ylabel('Magnitude [dB]', 'FontName', 'Helvetica', 'FontSize', 20);
-            title(sprintf('%s - Magnitude (Power in dB)', severity), 'FontSize', 30, 'FontName', 'Helvetica');
-            legend(legend_labels, 'Location', 'best', 'FontName', 'Helvetica', 'FontSize', 15);
+            xlabel('Time (s)', 'FontName', 'Helvetica', 'FontSize', font_label, 'Interpreter', 'latex');
+            ylabel('Magnitude [dB]', 'FontName', 'Helvetica', 'FontSize', font_label, 'Interpreter', 'latex');
+            title(sprintf('%s - Magnitude (Power in dB)', severity), 'FontSize', font_title, 'FontName', 'Helvetica', 'Interpreter', 'latex');
+            legend(legend_labels, 'Location', 'best', 'FontName', 'Helvetica', 'FontSize', font_legend, 'Interpreter', 'latex');
             grid on;
             hold off;
 
@@ -82,28 +93,20 @@ for constellation = constellations
                 phase_time_series = get_corrected_phase(scint_field.Var1);
                 plot(scint_field.Time, phase_time_series, 'LineWidth', 2.4);
             end
-            set(gca, 'FontName', 'Helvetica', 'FontSize', 20);
-            xlabel('Time (s)', 'FontName', 'Helvetica', 'FontSize', 20);
-            ylabel('Phase [rad]', 'FontName', 'Helvetica', 'FontSize', 20);
-            title(sprintf('%s - Phase Evolution', severity), 'FontSize', 30, 'FontName', 'Helvetica');
-            legend(freq_names, 'Location', 'best', 'FontName', 'Helvetica', 'FontSize', 15);
+            set(gca, 'FontName', 'Helvetica', 'FontSize', font_axis, 'Color', 'none');
+            xlabel('Time (s)', 'FontName', 'Helvetica', 'FontSize', font_label, 'Interpreter', 'latex');
+            ylabel('Phase [rad]', 'FontName', 'Helvetica', 'FontSize', font_label, 'Interpreter', 'latex');
+            title(sprintf('%s - Phase Evolution', severity), 'FontSize', font_title, 'FontName', 'Helvetica', 'Interpreter', 'latex');
+            legend(freq_names, 'Location', 'best', 'FontName', 'Helvetica', 'FontSize', font_legend, 'Interpreter', 'latex');
             grid on;
             hold off;
 
-            sgtitle(sprintf('Magnitude & Phase Analysis: %s | %s satellite %s', ...
-                severity, ...
-                upper(out.(constellation).scenario(i).sat.OrbitPropagator), ...
-                out.(constellation).scenario(i).sat.Name), 'FontSize', 45, ...
-                'FontName', 'Helvetica');
-
-            % Adjust figure paper size to match figure aspect ratio
-            set(fig, 'PaperUnits', 'centimeters');
-            fig_pos = get(fig, 'Position');
-            fig_width_cm = fig_pos(3) * 2.54 / 96;
-            fig_height_cm = fig_pos(4) * 2.54 / 96;
-            set(fig, 'PaperSize', [fig_width_cm fig_height_cm]);
-            set(fig, 'PaperPosition', [0 0 fig_width_cm fig_height_cm]);
-        end
-    end
-end
-end
+	            sgtitle(sprintf('Magnitude & Phase Analysis: %s | %s satellite %s', ...
+	                severity, ...
+	                upper(out.(constellation).scenario(i).sat.OrbitPropagator), ...
+	                out.(constellation).scenario(i).sat.Name), 'FontSize', font_sgtitle, ...
+	                'FontName', 'Helvetica', 'Interpreter', 'none');
+	        end
+	    end
+	end
+	end

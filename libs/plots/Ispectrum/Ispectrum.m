@@ -1,108 +1,190 @@
-function [Imu,mu,S4,Cpp,nstp,result]=Ispectrum(cspsm_root_dir, U,p1,p2,mu0,varargin)
-%USAGE      [Imu,mu,S4,Cpp,nstp,result]=Ispectrum(U,p1,p2,mu0)
+function [Imu, mu, S4] = Ispectrum(cpssm_root_dir, U, p1, p2, mu0, varargin)
+%Ispectrum Compute the normalized intensity spectrum I(mu) using ispectrum(.exe).
 %
-%      Ispectrum Parameters
-%                U  = Universal strength parameter
-%                p1= Low wavenumber index
-%                p2= High wavenumber index
-%              mu0=Normalized break scale
-%        varargin=1 for output summary
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%NOTES
-%Program Description:
-% SpectrumIntegration.exe is a Windows compliation of C code Ispectrum
-%Compliation by Dennis Hancock   dennishancock@earthlink.net
-% Ispectrum  Computes the normalized intensity SDF for a plane wave that traverses a phase screen
-%             I(mu) = int_{-inf}^{inf} exp[-gamma(eta,mu)] exp(-i eta mu) d eta
-%The normalized screen SDF is specified as a piecewise power law
-%             {   muo^(-p1),          if  0<= mu <= muo,
-%       P(mu) = U1 {    mu^(-p1),          if muo < mu <= mub,
-%            {  mub^(p2-p1) mu^(-p2), if mub < mu <= mui,
-% where U1 = Cp rhof^(p1-1) and
-%          Cp   = phase spectral strength
-%         rhof = sqrt(z/wavk) is the Fresnel scale
-%          z    = distance past the screen
-%      wavk = signal wavenumber
-%          k    = transverse wavenumber
-%       mu   = rhof*k  normalized transverse wavenumber
-%      muo  = rhof*ko normalized outer scale wavenumber
-%      mub  = rhof*kb normalized break scale wavenumber
-%      mui  = rhof*ki normalized inner scale wavenumber
-%    We assume that 0 < muo < mub < mui and also that muo << muf << mui, where
-%        muf = 2*pi is the normalized wavenumber corresponding to the Fresnel scale.
-%    The structure interaction function gamma(eta,mu) is given by
-% gamma(eta,mu) =
-% 16 U1 int_{  0,muo} muo^(-p1)   sin^2(chi eta/2) sin^2(chi mu/2) d chi/(2 pi)
-% + 16 U1 int_{muo,mub}             sin^2(chi eta/2) sin^2(chi mu/2) d chi/(2 pi)
-% + 16 U1 int_{muo,mui} mub^(p2-p1) sin^2(chi eta/2) sin^2(chi mu/2) d chi/(2 pi)
-% Universal scattering strength U equals U1 if mub>=1 and U1 mub^(p2-p1) otherwise
-% This program fully supports the limiting cases muo->0 and/or mui->infinity
-%--------------------------------------------------------------------------------
-%  Program Usage: ispectrum U p1 p2 mub muo mui [mu] | ([mu_min] [mu_max] [mu_num])
-%  Calling options:
-% 1: ispectrum U p1 p2 mub muo mui
-%  2: ispectrum U p1 p2 mub muo mui mu
-% 3: ispectrum U p1 p2 mub muo mui mu_min mu_max mu_num
+% Uses ispectrum "option 1" (no mu-grid arguments): the executable computes S4
+% via adaptive quadrature and writes I(mu) samples (at integrator-chosen mu
+% points) to ispectrum.dat.
 %
-%Notes:
-% * Setting muo and/or mui to zero omits them from the model
-% Option1 uses adaptive quadrature to compute S4
-% * Option2 computes I(mu) at the specified value of mu
-%* Option3 computes I(mu) at log spaced mu values between mu_min and mu_max
-%* The intensity SDF I(mu) is written to ispectrum.dat
-%* Parameters and moments are written to ispectrum.log
-%     Written by Charles Carrano, Boston College (charles.carrano@bc.edu
-%    For additional details, see
-%    Carrano, C. S., and C. L. Rino (2016), A theory of scintillation for two-component
-%      power law irregularity spectra: Overview and numerical results, Radio Sci.,
-%      51, 789–813, doi:10.1002/2015RS005903.
+% Note (Windows + WSL/UNC paths):
+%   On Windows, MATLAB's `system()` uses `cmd.exe`, which does not support
+%   UNC paths (e.g., \\wsl.localhost\...). If MATLAB's current folder is a
+%   UNC path, `cmd.exe` will fall back to a Windows folder and `ispectrum`
+%   may fail to write ispectrum.dat/ispectrum.log (or write them elsewhere).
+%   To avoid this, this wrapper always:
+%     (1) runs `ispectrum` from a local temp directory; and
+%     (2) on Windows, copies the executable into that temp directory so the
+%         command line never references UNC paths.
+%
+% Calling convention:
+%   [Imu, mu, S4] = Ispectrum(cpssm_root_dir, U, p1, p2, mu0)
+%
+% Parameters:
+%   cpssm_root_dir - Path to the CPSMM root (contains libs/plots/Ispectrum/)
+%   U    - universal strength parameter
+%   p1   - low-wavenumber index
+%   p2   - high-wavenumber index
+%   mu0  - normalized break scale (called "mub" in ispectrum.c docstring)
+%
+% Optional name/value arguments:
+%   'mu_outer' : normalized outer-scale wavenumber (default 0, omit)
+%   'mu_inner' : normalized inner-scale wavenumber (default 0, omit)
+%
+% Outputs:
+%   Imu - intensity spectrum samples I(mu)
+%   mu  - mu values at which I(mu) was evaluated (non-uniform)
+%   S4  - scintillation index from ispectrum.log
 
-IspecParams=generateIspecParams(U,p1,p2,mu0);
-fclose('all');      %Seems to be necessary to avoid error with multiple calls CLR Nov 2016
+%% Validate required args
+if ~(ischar(cpssm_root_dir) || isstring(cpssm_root_dir))
+    error('Ispectrum:InvalidArgs', 'Expected cpssm_root_dir as a string/char path.');
+end
+cpssm_root_dir = char(cpssm_root_dir);
 
-% determine the executable
-if isunix % GNU/Linux
+%% Parse optional arguments
+p = inputParser;
+p.FunctionName = mfilename;
+addParameter(p, 'mu_outer', 0.0, @(x) isnumeric(x) && isscalar(x));
+addParameter(p, 'mu_inner', 0.0, @(x) isnumeric(x) && isscalar(x));
+parse(p, varargin{:});
+
+mu_outer = p.Results.mu_outer;
+mu_inner = p.Results.mu_inner;
+
+%% Resolve executable
+if isunix
     ispectrum_exe = 'ispectrum';
-elseif ispc % Windows
+elseif ispc
     ispectrum_exe = 'ispectrum.exe';
-elseif ismac % MacOS
-    error('There is executable for macOS. Compile Ispectrum for this operating system');
+elseif ismac
+    error('There is no executable for macOS. Compile Ispectrum for this operating system.');
 else
     error('Unknown operating system.');
 end
 
-[status,result]= system(['"',fullfile(cspsm_root_dir,'libs','plots','Ispectrum',ispectrum_exe),'" ',IspecParams]);
-if status~=0
-    error(result)
+exe_path = fullfile(cpssm_root_dir, 'libs', 'plots', 'Ispectrum', ispectrum_exe);
+if ~exist(exe_path, 'file')
+    error('Ispectrum:ExecutableNotFound', 'ispectrum executable not found: %s', exe_path);
 end
-%NOTE: .dat and .log files are written in pwd
-fid=fopen(fullfile('ispectrum.log'),'r');
-logtxt=textscan(fid,'%s');
-if ~isempty(varargin)
-    fprintf('Ustar      U1        U2        p1       p2     mu0   mu_o  mu_i      S4    sigP    sigNfc num \n')
-    for n=14:25
-        str=logtxt{1}{n};
-        fprintf('%5.2f   ',str2num(str))
+
+IspecParams = generateIspecParams(U, p1, p2, mu0, mu_outer, mu_inner);
+
+% Outputs (initialize)
+Imu = [];
+mu = [];
+S4 = NaN;
+cmd_output = '';
+
+% Always run in a local temp directory so ispectrum can write its output files.
+% Use a unique temp directory to avoid collisions between calls.
+run_dir = tempname;
+mkdir(run_dir);
+data_path = fullfile(run_dir, 'ispectrum.dat');
+log_path = fullfile(run_dir, 'ispectrum.log');
+
+try
+    %% Option 1: compute S4 (and write ispectrum.dat/ispectrum.log)
+    % NOTE: ispectrum's options are controlled by the number of arguments passed.
+    %
+    % Important: on Windows, `system()` launches `cmd.exe` with MATLAB's current
+    % directory. If MATLAB is running from a UNC path, `cmd.exe` can fail before
+    % it even executes our command. So we temporarily `cd` to a local temp dir.
+    orig_dir = pwd;
+    dir_restore = onCleanup(@() safe_cd(orig_dir));
+
+    % Avoid referencing UNC paths on Windows by copying the executable locally.
+    local_exe_path = exe_path;
+    if ispc
+        local_exe_path = fullfile(run_dir, ispectrum_exe);
+        copyfile(exe_path, local_exe_path);
     end
-    fprintf('\n')
+
+    safe_cd(run_dir);
+    cmd = sprintf('"%s" %s', local_exe_path, IspecParams);
+    [status, cmd_output] = system(cmd);
+    % Always restore the original directory before cleanup/removal.
+    safe_cd(orig_dir);
+    clear dir_restore;
+
+    % Some Windows/UNC combinations may produce a nonzero exit code even when
+    % ispectrum generated the expected output files. Prefer file existence.
+    if status ~= 0 && (~exist(log_path, 'file') || ~exist(data_path, 'file'))
+        error('Ispectrum:ExecutionFailed', 'ispectrum failed (exit code %d).\nOutput:\n%s', status, cmd_output);
+    elseif status ~= 0
+        warning('Ispectrum:NonZeroExit', 'ispectrum exited with code %d but produced output files; continuing.\nOutput:\n%s', status, cmd_output);
+    end
+    
+    if ~exist(log_path, 'file')
+        error('Ispectrum fault: ispectrum.log not found. Output:\n%s', cmd_output);
+    end
+    
+    % Prefer numeric parsing of ispectrum.log (more robust than token indexing).
+    try
+        params = readmatrix(log_path, 'NumHeaderLines', 1);
+        if isempty(params)
+            params = readmatrix(log_path);
+        end
+        if size(params, 2) < 9
+            error('Unexpected ispectrum.log format.');
+        end
+        S4 = params(1, 9);
+    catch
+        % Fallback for older MATLAB versions / unexpected formats.
+        fid = fopen(log_path, 'r');
+        if fid < 0
+            error('Ispectrum fault: failed to open ispectrum.log.');
+        end
+        logtxt = textscan(fid, '%s');
+        fclose(fid);
+        if numel(logtxt{1}) < 22
+            error('Ispectrum fault: unexpected token count in ispectrum.log.');
+        end
+        S4 = str2double(logtxt{1}{22});
+    end
+    
+    if ~exist(data_path, 'file')
+        error('Ispectrum fault: ispectrum.dat not found. Output:\n%s', cmd_output);
+    end
+    
+    data = importdata(data_path);
+    [~, ndata] = size(data);
+    if ndata ~= 3
+        error('Ispectrum fault: unexpected data format in ispectrum.dat.');
+    end
+    
+    mu = data(:, 1);
+    Imu = data(:, 2);
+catch ME
+    if exist('orig_dir', 'var')
+        safe_cd(orig_dir);
+    end
+    cleanup_ispectrum_files(run_dir);
+    rethrow(ME);
 end
-S4=str2double(logtxt{1}{22});
-if mu0>=1
-    Cpp=U;
-else
-    Cpp=U/mu0^(p2-p1);
+
+cleanup_ispectrum_files(run_dir);
 end
-data=importdata(fullfile('ispectrum.dat'));
-[~,ndata]=size(data);
-if ndata~=3
-    fclose('all');
-    error('Ispectrum fault ')
-else
-mu=data(:,1);
-Imu=data(:,2);
-nstp=data(:,3);
+
+function safe_cd(target_dir)
+    try
+        cd(target_dir);
+    catch
+    end
 end
-fclose('all');
-delete(fullfile('ispectrum.dat'));
-delete(fullfile('ispectrum.log'));
-return
+
+% Auxiliary function to clean up temporary files
+function cleanup_ispectrum_files(dir_path)
+    dat = fullfile(dir_path, 'ispectrum.dat');
+    logf = fullfile(dir_path, 'ispectrum.log');
+    if exist(dat, 'file')
+        delete(dat);
+    end
+    if exist(logf, 'file')
+        delete(logf);
+    end
+    if exist(dir_path, 'dir')
+        try
+            rmdir(dir_path, 's');
+        catch
+        end
+    end
+end
